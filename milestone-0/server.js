@@ -26,18 +26,6 @@ app.get("/users", async (req, res) => {
   }
 });
 
-app.get("/reviews", async (req, res) => {
-  try {
-    res.send("hello");
-    const result = await pool.query("SELECT * from netflix_titles LIMIT 10;");
-    const reviews = result.rows;
-    res.send(reviews);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Querying from database error");
-  }
-});
-
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
