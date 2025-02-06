@@ -13,7 +13,38 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  res.send("Hello, Netflix Review Database!");
+  try {
+    let html = `
+      <html>
+      <head>
+        <title>Login</title>
+      </head>
+      <body style="font-family: Arial; text-align: center;">
+        <div>
+          <div style="font-size: 20px;">
+            <h1><span style="color: red;">Netflix</span> Movie Reviews</h1>
+          </div>
+          <h3>Login to your account</h3>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+            <input type="email" placeholder="Email" style="width: 300px; padding: 0.5rem;">
+            <input type="password" placeholder="Password" style="width: 300px; padding: 0.5rem;">
+          </div>
+          <div style="margin-top: 1rem;">
+            <button onclick="loginPushed()" style="padding: 0.5rem 1rem;">Login</button>
+          </div>
+          <script>
+          function loginPushed() {
+            window.location.href = '/movies';
+          }
+        </script>
+      </div>
+      </body>
+      </html>
+    `;
+    res.send(html);
+  } catch (err) {
+    console.log(err);
+  }
 });
 
 app.get("/users", async (req, res) => {
