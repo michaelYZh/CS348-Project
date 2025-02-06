@@ -21,7 +21,8 @@ pip install psycopg2 pandas sqlalchemy
 ```
 
 ### 3. Load data
-In your terminal, run the following command to load the data into your database's table:
+In your terminal, naviguate to to this Readme's directory (`data_loader`), and then run the following command to load the data into your database's table:
+
 ```
 python data_loader_script.py
 ```
