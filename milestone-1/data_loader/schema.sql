@@ -1,4 +1,6 @@
 DROP TABLE IF EXISTS netflix_titles;
+DROP TABLE IF EXISTS Users;
+DROP TABLE IF EXISTS Ratings;
 
 CREATE TABLE netflix_titles (
     show_id VARCHAR(10) PRIMARY KEY,
@@ -13,4 +15,20 @@ CREATE TABLE netflix_titles (
     duration VARCHAR(20),
     listed_IN TEXT,
     description TEXT
+);
+
+CREATE TABLE Users (
+    uid SERIAL,
+    username VARCHAR(100) NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    PRIMARY KEY (uid)
+);
+
+CREATE TABLE Ratings (
+    show_id VARCHAR(10) NOT NULL,
+    uid INTEGER NOT NULL,
+    rating INTEGER,
+    PRIMARY KEY (show_id, uid),
+    FOREIGN KEY (show_id) REFERENCES netflix_titles(show_id),
+    FOREIGN KEY (uid) REFERENCES Users(uid)
 );

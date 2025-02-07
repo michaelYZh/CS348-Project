@@ -26,15 +26,17 @@ app.get("/", (req, res) => {
           </div>
           <h3>Login to your account</h3>
           <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-            <input type="email" placeholder="Email" style="width: 300px; padding: 0.5rem;">
-            <input type="password" placeholder="Password" style="width: 300px; padding: 0.5rem;">
+            <input id="email" type="email" placeholder="Email" style="width: 300px; padding: 0.5rem;">
+            <input id="password" type="password" placeholder="Password" style="width: 300px; padding: 0.5rem;">
           </div>
           <div style="margin-top: 1rem;">
             <button onclick="loginPushed()" style="padding: 0.5rem 1rem;">Login</button>
           </div>
           <script>
           function loginPushed() {
-            window.location.href = '/movies';
+            const username = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            window.location.href = \`/login?username=\${username}&password=\${password}\`;
           }
         </script>
       </div>
@@ -47,10 +49,14 @@ app.get("/", (req, res) => {
   }
 });
 
-app.get("/users", async (req, res) => {
+app.get("/login", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM users");
-    res.json(result.rows);
+    const username = req.query.username;
+    const password = req.query.password;
+    console.log(username,password);
+    const result = await pool.query(`SELECT count(username) FROM users GROUP BY username, password HAVING username='${username}' and password='${password}'`);
+    if (result.rows.length > 0) res.redirect("../movies");
+    else res.redirect("../");
   } catch (err) {
     console.error(err);
     res.status(500).send("Database error");

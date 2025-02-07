@@ -16,3 +16,9 @@ SELECT *
 FROM netflix_titles
 ORDER BY title
 LIMIT 5 OFFSET 0;
+
+-- Search for user given a username and password for login
+SELECT count(username) 
+FROM users 
+GROUP BY username, password 
+HAVING username='admin' and password='password';
