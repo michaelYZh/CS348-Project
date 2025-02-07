@@ -59,7 +59,7 @@ app.get("/users", async (req, res) => {
 
 app.get("/movies", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * from netflix_titles;"); // query all movies
+    const result = await pool.query("SELECT * FROM netflix_titles ORDER BY title;"); // query all movies
     const reviews = result.rows;
     // The display of the data
     // TODO: Change to actual UI once we use react

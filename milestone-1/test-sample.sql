@@ -10,3 +10,9 @@ FROM netflix_titles
 WHERE listed_in LIKE 'Thriller' || '%'
 ORDER BY release_year DESC
 LIMIT 5;
+
+-- Load movies from database
+SELECT *
+FROM netflix_titles
+ORDER BY title
+LIMIT 5 OFFSET 0;
