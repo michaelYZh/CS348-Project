@@ -22,3 +22,10 @@ SELECT count(username)
 FROM users 
 GROUP BY username, password 
 HAVING username='admin' and password='password';
+
+-- Insert a new movie
+INSERT INTO netflix_titles (
+    show_id, show_type, title, director, show_cast, country, date_added, 
+    release_year, rating, duration, listed_IN, description
+) VALUES ('s99999', 'movie', 'tester', 'ee', 'one two three', 'ee', '1999-03-31', 1999, 'PG13', '90 mins', 'cc', 'cc')
+;

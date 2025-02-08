@@ -17,7 +17,7 @@ CREATE TABLE netflix_titles (
     release_year INT,
     rating VARCHAR(20),
     duration VARCHAR(20),
-    listed_IN TEXT,
+    listed_in TEXT,
     description TEXT,
     PRIMARY KEY (show_id, release_year, title),
     UNIQUE(show_id)
