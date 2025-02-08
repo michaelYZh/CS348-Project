@@ -1,5 +1,6 @@
 import pandas as pd
 from sqlalchemy import create_engine
+from sqlalchemy import text
 
 # Load the data
 csv_file_path = 'netflix_titles.csv'
@@ -10,6 +11,17 @@ user_data = pd.read_csv("users.csv")
 postgres_password = "" # set to whatever your password is, default postgres is empty
 db_url = f"postgresql://postgres:{postgres_password}@localhost:5432/netflix_reviews"
 engine = create_engine(db_url)
+
+# drop all tables and replace them, as this script re-writes data (and there are primary key dependencies)
+with engine.connect() as conn:
+    conn.execute(text("DROP TABLE IF EXISTS Ratings CASCADE;"))
+    conn.execute(text("DROP TABLE IF EXISTS Show_Tiers CASCADE;"))
+    conn.execute(text("DROP TABLE IF EXISTS Watch_List CASCADE;"))
+    conn.execute(text("DROP TABLE IF EXISTS Reviews CASCADE;"))
+    conn.execute(text("DROP TABLE IF EXISTS User_Information CASCADE;"))
+    conn.execute(text("DROP TABLE IF EXISTS Users CASCADE;"))
+    conn.execute(text("DROP TABLE IF EXISTS netflix_titles CASCADE;"))
+    conn.commit()
 
 # Load into Postgresql
 data.to_sql("netflix_titles", engine, if_exists="replace", index=False)
