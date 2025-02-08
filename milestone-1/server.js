@@ -105,6 +105,61 @@ app.get("/movies", async (req, res) => {
   }
 });
 
+// TODO: Combine functionality wirth the /movies link, this is just separate foer now to show feature functionality
+app.get("/search", async (req, res) => {
+  try {
+    const searchQuery = req.query.search || ""; // empty so no undefined error
+    // inline html for now
+    let html = `
+      <html>
+      <head>
+        <title>Search Movies</title>
+      </head>
+      <body>
+        <h1>Search for a Movie</h1>
+        <form method="GET" action="/search">
+          <input type="text" name="search" placeholder="Search for a movie" value="${searchQuery}">
+          <button type="submit">Search</button>
+        </form>`;
+    
+      const result = await pool.query(`
+        SELECT title, release_year, show_type, duration, description 
+        FROM netflix_titles 
+        WHERE LOWER(title) LIKE LOWER($1) 
+        ORDER BY title ASC`, ["%" + searchQuery + "%"]);
+      const movies = result.rows;
+      
+      html += `<table border="1">
+          <tr>
+            <th>Title</th>
+            <th>Release Year</th>
+            <th>Type</th>
+            <th>Duration</th>
+            <th>Description</th>
+          </tr>`;
+      
+      movies.forEach(movie => {
+        html += `
+        <tr>
+          <td>${movie.title}</td>
+          <td>${movie.release_year}</td>
+          <td>${movie.show_type}</td>
+          <td>${movie.duration}</td>
+          <td>${movie.description}</td>
+        </tr>`;
+      });
+    
+    html += `</table>
+    </body>
+    </html>`;
+
+    res.send(html);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Querying from database error");
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
