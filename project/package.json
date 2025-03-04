@@ -1,5 +1,5 @@
 {
-  "name": "milestone-1",
+  "name": "project",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -13,7 +13,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "milestone-1": "file:",
+    "project": "file:",
     "pg": "^8.13.1"
   }
 }
