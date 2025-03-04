@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Movie Reviews</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: auto;
+            padding: 20px;
+        }
+        h1 {
+            color: red;
+        }
+        .search-bar {
+            margin: 20px 0;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 60%;
+            border: none;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: darkred;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+            text-align: center;
+        }
+        th {
+            background-color: red;
+            color: white;
+        }
+        tr:hover {
+            background-color: #292929;
+        }
+
+        /* Fancy Pagination Buttons */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .pagination-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #28a745;
+            border: 2px solid #28a745;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            outline: none;
+        }
+        .pagination-btn:hover {
+            background-color: #218838;
+            border-color: #218838;
+            transform: scale(1.05);
+        }
+        .pagination-btn:disabled {
+            background-color: #ccc;
+            border-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .arrow {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pagination">
+        <button id="prevPage" class="pagination-btn" onclick="changePage(-1, event)" disabled>
+            <span class="arrow">←</span> Previous
+        </button>
+        <span id="pageNumber">Page 1</span>
+        <button id="nextPage" class="pagination-btn" onclick="changePage(1, event)">
+            Next <span class="arrow">→</span>
+        </button>
+    </div>     
+    <div class="container">
+        <h1>Netflix Movie Reviews</h1>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search for a movie..." onkeypress="handleKeyPress(event)">
+            <button onclick="searchMovie()">Search</button>
+        </div>
+        <table id="moviesTable">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Release Year</th>
+                    <th>Type</th>
+                    <th>Duration</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Waiting for javascript to load data, to then insert and populate with data -->
+            </tbody>
+        </table>
+    </div>
+    <div class="pagination">
+        <button id="prevPage" class="pagination-btn" onclick="changePage(-1, event)" disabled>
+            <span class="arrow">←</span> Previous
+        </button>
+        <span id="pageNumber">Page 1</span>
+        <button id="nextPage" class="pagination-btn" onclick="changePage(1, event)">
+            Next <span class="arrow">→</span>
+        </button>
+    </div>    
+
+    <script>
+        let currPage = 1
+        let maxPage = 1
+        document.addEventListener("DOMContentLoaded", function () {
+            fetchMovies();
+        });
+
+        function changePage(step) {
+            const newPage = currPage + step;
+            if (newPage < 1) return; // no negative page numbers
+            fetchMovies(newPage);
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") { // Check if Enter key is pressed
+                searchMovie();
+            }
+        }
+
+        async function fetchMovies(page = 1) {
+            try {
+                const query = document.getElementById("searchInput").value.trim();
+                const response = await fetch(`/api/movies?search=${encodeURIComponent(query)}&page=${page}`);
+                if (!response.ok) throw new Error("Failed to fetch movies");
+
+                const data = await response.json();
+                const movies = data.movies;
+                currPage = data.currentPage; // Correctly updating the current page
+                maxPage = data.maxPage; // Store max page from API
+
+                const tableBody = document.querySelector("#moviesTable tbody");
+                tableBody.innerHTML = ""; // Clear previous rows
+
+                movies.forEach(movie => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${movie.title}</td>
+                        <td>${movie.release_year}</td>
+                        <td>${movie.show_type}</td>
+                        <td>${movie.duration}</td>
+                        <td>${movie.description}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Update BOTH pagination sections
+                document.querySelectorAll("#pageNumber").forEach(el => el.textContent = `Page ${currPage} of ${maxPage}`);
+                document.querySelectorAll("#prevPage").forEach(el => el.disabled = currPage === 1);
+                document.querySelectorAll("#nextPage").forEach(el => el.disabled = currPage >= maxPage);
+
+            } catch (error) {
+                console.error("Error fetching movies:", error);
+                alert("Error loading movies. Please check the console.");
+            }
+        }
+
+
+        async function searchMovie() {
+        const query = document.getElementById("searchInput").value.trim(); // Get search input
+        try {
+            const response = await fetch(`/api/movies?search=${encodeURIComponent(query)}&page=1`);
+            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+
+            const data = await response.json();
+            currPage = data.currentPage; // Update page
+            maxPage = data.maxPage; // Ensure pagination works
+            const movies = data.movies;
+
+            const tableBody = document.querySelector("#moviesTable tbody");
+            tableBody.innerHTML = ""; // Clear previous rows
+
+            movies.forEach(movie => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${movie.title}</td>
+                    <td>${movie.release_year}</td>
+                    <td>${movie.show_type}</td>
+                    <td>${movie.duration}</td>
+                    <td>${movie.description}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Update pagination UI after search
+            document.querySelectorAll("#pageNumber").forEach(el => el.textContent = `Page ${currPage} of ${maxPage}`);
+            document.querySelectorAll("#prevPage").forEach(el => el.disabled = currPage === 1);
+            document.querySelectorAll("#nextPage").forEach(el => el.disabled = currPage >= maxPage);
+
+        } catch (error) {
+            console.error("Error fetching search results:", error);
+            alert("Error loading search results. Please check the console.");
+        }
+    }
+
+
+    </script>
+</body>
+</html>
