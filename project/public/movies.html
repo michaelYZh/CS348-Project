@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Netflix Movie Reviews</title>
     <style>
+        /* JS for the style of components and general design */
         body {
             font-family: Arial, sans-serif;
             background-color: #121212;
@@ -146,34 +147,78 @@
     </div>    
 
     <script>
+        /* Variables for dynamic page loading */
         let currPage = 1
         let maxPage = 1
         document.addEventListener("DOMContentLoaded", function () {
             fetchMovies();
         });
 
+        /* Page changing update the results */
         function changePage(step) {
             const newPage = currPage + step;
             if (newPage < 1) return; // no negative page numbers
             fetchMovies(newPage);
         }
 
+        /* Allowing to press enter or mouse click for results */
         function handleKeyPress(event) {
-            if (event.key === "Enter") { // Check if Enter key is pressed
+            if (event.key === "Enter") { // only allow enter key, all other ones for input
                 searchMovie();
             }
         }
 
+        /* fetching movies, default page is 1 so that it always resets on a search. This loads paginated data */
         async function fetchMovies(page = 1) {
             try {
-                const query = document.getElementById("searchInput").value.trim();
-                const response = await fetch(`/api/movies?search=${encodeURIComponent(query)}&page=${page}`);
+                const query = document.getElementById("searchInput").value.trim(); // response from JS, send the search'ed value
+                const response = await fetch(`/api/movies?search=${encodeURIComponent(query)}&page=${page}`); // results
                 if (!response.ok) throw new Error("Failed to fetch movies");
 
                 const data = await response.json();
                 const movies = data.movies;
-                currPage = data.currentPage; // Correctly updating the current page
-                maxPage = data.maxPage; // Store max page from API
+                currPage = data.currentPage; // update page size
+                maxPage = data.maxPage;
+
+                const tableBody = document.querySelector("#moviesTable tbody");
+                tableBody.innerHTML = ""; // clear previous rows for new searches
+
+                // format display of values
+                movies.forEach(movie => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${movie.title}</td>
+                        <td>${movie.release_year}</td>
+                        <td>${movie.show_type}</td>
+                        <td>${movie.duration}</td>
+                        <td>${movie.description}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // update both pagination sections (so that top and bottom are synchronized)
+                document.querySelectorAll("#pageNumber").forEach(el => el.textContent = `Page ${currPage} of ${maxPage}`);
+                document.querySelectorAll("#prevPage").forEach(el => el.disabled = currPage === 1);
+                document.querySelectorAll("#nextPage").forEach(el => el.disabled = currPage >= maxPage);
+
+            } catch (error) {
+                console.error("Error fetching movies:", error);
+                alert("Error loading movies. Please check the console.");
+            }
+        }
+
+        /* This is used to get the filtered results */
+        async function searchMovie() {
+            /* very similar to fetchMovies logic */
+            const query = document.getElementById("searchInput").value.trim(); // Get search input
+            try {
+                const response = await fetch(`/api/movies?search=${encodeURIComponent(query)}&page=1`);
+                if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+
+                const data = await response.json();
+                currPage = data.currentPage;
+                maxPage = data.maxPage;
+                const movies = data.movies;
 
                 const tableBody = document.querySelector("#moviesTable tbody");
                 tableBody.innerHTML = ""; // Clear previous rows
@@ -190,54 +235,15 @@
                     tableBody.appendChild(row);
                 });
 
-                // Update BOTH pagination sections
                 document.querySelectorAll("#pageNumber").forEach(el => el.textContent = `Page ${currPage} of ${maxPage}`);
                 document.querySelectorAll("#prevPage").forEach(el => el.disabled = currPage === 1);
                 document.querySelectorAll("#nextPage").forEach(el => el.disabled = currPage >= maxPage);
 
             } catch (error) {
-                console.error("Error fetching movies:", error);
-                alert("Error loading movies. Please check the console.");
+                console.error("Error fetching search results:", error);
+                alert("Error loading search results. Please check the console.");
             }
         }
-
-
-        async function searchMovie() {
-        const query = document.getElementById("searchInput").value.trim(); // Get search input
-        try {
-            const response = await fetch(`/api/movies?search=${encodeURIComponent(query)}&page=1`);
-            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-
-            const data = await response.json();
-            currPage = data.currentPage; // Update page
-            maxPage = data.maxPage; // Ensure pagination works
-            const movies = data.movies;
-
-            const tableBody = document.querySelector("#moviesTable tbody");
-            tableBody.innerHTML = ""; // Clear previous rows
-
-            movies.forEach(movie => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${movie.title}</td>
-                    <td>${movie.release_year}</td>
-                    <td>${movie.show_type}</td>
-                    <td>${movie.duration}</td>
-                    <td>${movie.description}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-
-            // Update pagination UI after search
-            document.querySelectorAll("#pageNumber").forEach(el => el.textContent = `Page ${currPage} of ${maxPage}`);
-            document.querySelectorAll("#prevPage").forEach(el => el.disabled = currPage === 1);
-            document.querySelectorAll("#nextPage").forEach(el => el.disabled = currPage >= maxPage);
-
-        } catch (error) {
-            console.error("Error fetching search results:", error);
-            alert("Error loading search results. Please check the console.");
-        }
-    }
 
 
     </script>

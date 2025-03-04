@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html")); // go to html page
 });
 
 app.get("/login", async (req, res) => {
@@ -35,23 +35,25 @@ app.get("/movies", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "movies.html"));
 });
 
+// used for searching and displaying all moveis, 2-in-1 function
 app.get("/api/movies", async (req, res) => {
   try {
-      const searchQuery = req.query.search || ""; // Get search term
-      const page = parseInt(req.query.page) || 1; // Get page number, default to 1
-      const limit = 100; // Movies per page
-      const offset = (page - 1) * limit; // Calculate offset
+      const searchQuery = req.query.search || "";
+      const page = parseInt(req.query.page) || 1;
+      // query values (constant limit of results, page number)
+      const limit = 100;
+      const offset = (page - 1) * limit;
 
-      // Query to get the total count of matching movies
+      // query amt of movies with certain search values, for dynamic display
       const countQuery = `
           SELECT COUNT(*) AS total FROM netflix_titles
           WHERE LOWER(title) LIKE LOWER($1);
       `;
       const countResult = await pool.query(countQuery, [`%${searchQuery}%`]);
       const totalMovies = parseInt(countResult.rows[0].total);
-      const maxPage = Math.ceil(totalMovies / limit); // Calculate the last possible page
+      const maxPage = Math.ceil(totalMovies / limit);
 
-      // Query to fetch movies with pagination
+      // actual query for values
       const query = `
           SELECT title, release_year, show_type, duration, description
           FROM netflix_titles
