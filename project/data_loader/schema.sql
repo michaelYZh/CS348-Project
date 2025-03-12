@@ -40,7 +40,7 @@ CREATE TABLE user_information (
 CREATE TABLE ratings (
     show_id VARCHAR(10) NOT NULL,
     uid INTEGER NOT NULL,
-    score INTEGER,
+    score INTEGER CHECK (score BETWEEN 0 AND 10),
     review TEXT,
     PRIMARY KEY (show_id, uid),
     FOREIGN KEY (show_id) REFERENCES netflix_titles(show_id),

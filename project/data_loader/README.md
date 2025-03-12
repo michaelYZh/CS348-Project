@@ -20,7 +20,10 @@ In your terminal, run the following command to download the required packages:
 pip install psycopg2 pandas sqlalchemy
 ```
 
-### 3. Load data
+### 3. Create tables
+Following the `Setting up Tables` step.
+
+### 4. Load data
 In your terminal, naviguate to to this Readme's directory (`data_loader`), and then run the following command to load the data into your database's table:
 
 ```

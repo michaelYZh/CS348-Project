@@ -103,6 +103,13 @@
         .arrow {
             font-size: 20px;
         }
+        a {
+            color: white;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -187,7 +194,7 @@
                 movies.forEach(movie => {
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                        <td>${movie.title}</td>
+                        <td><a href="movie.html?title=${encodeURIComponent(movie.title)}">${movie.title}</a></td>
                         <td>${movie.release_year}</td>
                         <td>${movie.show_type}</td>
                         <td>${movie.duration}</td>
@@ -226,7 +233,7 @@
                 movies.forEach(movie => {
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                        <td>${movie.title}</td>
+                        <td><a href="movie.html?title=${encodeURIComponent(movie.title)}">${movie.title}</a></td>
                         <td>${movie.release_year}</td>
                         <td>${movie.show_type}</td>
                         <td>${movie.duration}</td>
@@ -244,8 +251,6 @@
                 alert("Error loading search results. Please check the console.");
             }
         }
-
-
     </script>
 </body>
 </html>

@@ -14,11 +14,6 @@ engine = create_engine(db_url)
 
 # drop all tables and replace them, as this script re-writes data (and there are primary key dependencies)
 with engine.connect() as conn:
-    conn.execute(text("DROP TABLE IF EXISTS Ratings CASCADE;"))
-    conn.execute(text("DROP TABLE IF EXISTS Show_Tiers CASCADE;"))
-    conn.execute(text("DROP TABLE IF EXISTS Watch_List CASCADE;"))
-    conn.execute(text("DROP TABLE IF EXISTS Reviews CASCADE;"))
-    conn.execute(text("DROP TABLE IF EXISTS User_Information CASCADE;"))
     conn.execute(text("DROP TABLE IF EXISTS Users CASCADE;"))
     conn.execute(text("DROP TABLE IF EXISTS netflix_titles CASCADE;"))
     conn.commit()
