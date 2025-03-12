@@ -1,0 +1,204 @@
+<!-- TODO: Add a section where you can click to add a review dynamically, and insert it based on the person logged in!-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Details</title>
+    <!-- CSS Styling-->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #121212;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #ff4c4c;
+        }
+        .movie-poster {
+            width: 300px;
+            height: 450px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0px 4px 10px rgba(255, 76, 76, 0.5);
+        }
+        /* Styling for the user ratings, using card style*/
+        .ratings-container {
+            margin-top: 30px;
+            text-align: left;
+        }
+        .rating-card {
+            background: linear-gradient(135deg, #1e1e1e, #2c2c2c);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0px 4px 10px rgba(255, 76, 76, 0.2);
+            transition: transform 0.3s ease-in-out;
+        }
+        .rating-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0px 6px 15px rgba(255, 76, 76, 0.4);
+        }
+        .rating-user {
+            font-weight: bold;
+            color: #ff4c4c;
+        }
+        .star-rating {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            margin-top: 5px;
+        }
+        .star {
+            color: gold;
+            font-size: 1.2em;
+        }
+        .star.empty {
+            color: #444;
+        }
+        .rating-review {
+            margin-top: 8px;
+            font-style: italic;
+            color: #ccc;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 15px;
+            text-decoration: none;
+            color: white;
+            background-color: #ff4c4c;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .back-link:hover {
+            background-color: #cc0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="movieTitle"></h1>
+        <img id="moviePoster" class="movie-poster" src="" alt="Movie Poster">
+        <p><strong>Release Year:</strong> <span id="releaseYear"></span></p>
+        <p><strong>Type:</strong> <span id="showType"></span></p>
+        <p><strong>Duration:</strong> <span id="duration"></span></p>
+        <p><strong>Rating:</strong> <span id="rating"></span></p>
+        <p><strong>Genres:</strong> <span id="listedIn"></span></p>
+        <p><strong>Director:</strong> <span id="director"></span></p>
+        <p><strong>Show Cast:</strong> <span id="showCast"></span></p>
+        <p><strong>Country of Origin:</strong> <span id="country"></span></p>
+        <p><strong>Description:</strong> <span id="description"></span></p>
+
+        <h2>User Ratings</h2>
+        <div id="ratingsContainer" class="ratings-container">
+            <p>Loading ratings...</p>
+        </div>
+
+        <a href="movies.html" class="back-link">Back to Movies</a>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async function () {
+            const params = new URLSearchParams(window.location.search);
+            const title = params.get("title");
+
+            if (!title) {
+                document.body.innerHTML = "<h1>Movie not found</h1>";
+                return;
+            }
+
+            try {
+                // Fetch movie details
+                const response = await fetch(`/api/movie?title=${encodeURIComponent(title)}`);
+                if (!response.ok) throw new Error("Failed to fetch movie details");
+                
+                // All the values we wnat to display
+                const movie = await response.json();
+                document.getElementById("movieTitle").textContent = movie.title;
+                document.getElementById("releaseYear").textContent = movie.release_year;
+                document.getElementById("showType").textContent = movie.show_type;
+                document.getElementById("duration").textContent = movie.duration;
+                document.getElementById("rating").textContent = movie.rating;
+                document.getElementById("listedIn").textContent = movie.listed_in;
+                document.getElementById("description").textContent = movie.description;
+                document.getElementById("director").textContent = movie.director;
+                document.getElementById("showCast").textContent = movie.show_cast;
+                document.getElementById("country").textContent = movie.country;
+
+                // Fetch ratings
+                const ratingsResponse = await fetch(`/api/ratings?title=${encodeURIComponent(title)}`);
+                const ratingsData = await ratingsResponse.json();
+
+                const ratingsContainer = document.getElementById("ratingsContainer");
+                ratingsContainer.innerHTML = ""; // Clear loading text
+                
+                // If there are no ratings available, display this to prevent errors (trying to load empty)
+                if (ratingsData.ratings.length === 0) {
+                    ratingsContainer.innerHTML = "<p>No ratings available for this movie.</p>";
+                } else {
+                    ratingsData.ratings.forEach(rating => {
+                        const ratingElement = document.createElement("div");
+                        ratingElement.classList.add("rating-card");
+
+                        // Generate star rating
+                        const stars = generateStarRating(rating.score);
+
+                        ratingElement.innerHTML = `
+                            <p class="rating-user">${rating.username}</p>
+                            <div class="star-rating">${stars} &nbsp;&nbsp;(${rating.score}/10)</div>
+                            <p class="rating-review">${rating.review || "No review provided."}</p>
+                        `;
+                        ratingsContainer.appendChild(ratingElement);
+                    });
+                }
+
+                // Fetch movie poster from IMDB as our dataset doesn't contain appropriate images
+                const configResponse = await fetch("/api/config");
+                const configData = await configResponse.json();
+                const omdbApiKey = configData.omdbApiKey;
+                // Erroneous request
+                if (!omdbApiKey) {
+                    throw new Error("OMDB API key not available.");
+                }
+                const omdbResponse = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(movie.title)}&apikey=${omdbApiKey}&`);
+                const omdbData = await omdbResponse.json();
+                // Getting the poster, or a "no image available" image
+                if (omdbData.Poster) {
+                    document.getElementById("moviePoster").src = omdbData.Poster;
+                } else {
+                    document.getElementById("moviePoster").src = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
+                }
+
+            } catch (error) {
+                console.error("Error fetching movie:", error);
+                document.body.innerHTML = "<h1>Error loading movie details.</h1>";
+            }
+        });
+
+        // Cool little star rating visual for ratings given by users
+        function generateStarRating(score) {
+            let stars = "";
+            for (let i = 1; i <= 10; i++) {
+                if (i <= score) {
+                    stars += `<span class="star">&#9733;</span>`; // Filled star
+                } else {
+                    stars += `<span class="star empty">&#9734;</span>`; // Empty star
+                }
+            }
+            return stars;
+        }
+    </script>
+</body>
+</html>
