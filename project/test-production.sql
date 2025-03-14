@@ -5,7 +5,8 @@ FROM netflix_titles
 WHERE LOWER(title) LIKE LOWER('Star Wars%')
 ORDER BY title;
 
-SELECT *
+-- List movies feature, only first 5
+SELECT title, release_year, show_type, duration, description
 FROM netflix_titles
 ORDER BY title
 LIMIT 5 OFFSET 0;
