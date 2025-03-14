@@ -9,3 +9,8 @@ SELECT *
 FROM netflix_titles
 ORDER BY title
 LIMIT 5 OFFSET 0;
+
+SELECT count(username)
+FROM users
+GROUP BY username, password
+HAVING username='admin@gmail.com';
