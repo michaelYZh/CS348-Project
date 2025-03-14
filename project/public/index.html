@@ -45,15 +45,23 @@
         button:hover {
             background-color: darkred;
         }
+        img {
+            width: 70%;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <img src="./resources/NetflixLogo.jpg" alt="Netflix Logo" wdith="">
         <h1>Netflix Movie Reviews</h1>
         <h3>Login to your account</h3>
-        <input id="email" type="email" placeholder="Email">
-        <input id="password" type="password" placeholder="Password">
-        <button onclick="loginPushed()">Login</button>
+        <form action="/login" method="POST">
+            <input name="username" type="email" placeholder="Email" required>
+            <input name="password" type="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <br>
+        <a href="/register" style="color:red">Don't have an account? Register here</a>
     </div>
     <script>
         function loginPushed() {

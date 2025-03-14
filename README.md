@@ -7,6 +7,7 @@
 ### 1. Install Dependencies
 ```sh
 npm install
+npm install express-session passport passport-local bcrypt
 ```
 ### 2. Set up PostgreSQL
 ```
