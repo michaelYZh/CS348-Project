@@ -43,6 +43,10 @@ app.get("/movies", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "movies.html"));
 });
 
+app.get("/add-show", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "add-show.html"));
+});
+
 // used for searching and displaying all moveis, 2-in-1 function
 app.get("/api/movies", async (req, res) => {
   try {
@@ -144,7 +148,79 @@ app.get("/api/ratings", async (req, res) => {
   }
 });
 
+// Add a new show to the database
+app.post("/api/add-show", async (req, res) => {
+  try {
+    const {
+      showId,
+      showType,
+      title,
+      director,
+      showCast,
+      country,
+      dateAdded,
+      releaseYear,
+      rating,
+      duration,
+      listedIn,
+      description
+    } = req.body;
 
+    // Validate required fields
+    if (!showId || !showType || !title || !releaseYear) {
+      return res.status(400).json({ error: "Missing required fields: showId, showType, title, and releaseYear are required" });
+    }
+
+    // Check if show_id already exists
+    const checkQuery = `SELECT COUNT(*) FROM netflix_titles WHERE show_id = $1`;
+    const checkResult = await pool.query(checkQuery, [showId]);
+    
+    if (parseInt(checkResult.rows[0].count) > 0) {
+      return res.status(409).json({ error: "A show with this ID already exists" });
+    }
+
+    // Format date for SQL
+    let formattedDate = null;
+    if (dateAdded) {
+      formattedDate = dateAdded; // The input date is already in YYYY-MM-DD format
+    }
+
+    // Insert the new show using SQL query
+    const insertQuery = `
+      INSERT INTO netflix_titles (
+        show_id, show_type, title, director, show_cast, country, date_added, 
+        release_year, rating, duration, listed_in, description
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *;
+    `;
+    
+    const values = [
+      showId,
+      showType,
+      title,
+      director || null,
+      showCast || null,
+      country || null,
+      formattedDate,
+      releaseYear,
+      rating || null,
+      duration || null,
+      listedIn || null,
+      description || null
+    ];
+
+    const result = await pool.query(insertQuery, values);
+    
+    res.status(201).json({ 
+      message: "Show added successfully", 
+      show: result.rows[0] 
+    });
+    
+  } catch (err) {
+    console.error("Error adding new show:", err);
+    res.status(500).json({ error: "Database error while adding new show" });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
