@@ -1,4 +1,4 @@
 uid,username,password
-1,admin,password
+1,admin@gmail.com,password
 2,user_a@gmail.com,password_a
-3,user_b,password_b
+3,user_b@gmail.com,password_b
