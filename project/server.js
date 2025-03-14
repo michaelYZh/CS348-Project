@@ -154,7 +154,7 @@ app.get("/api/movies", async (req, res) => {
           ORDER BY title
           LIMIT $2 OFFSET $3;
       `;
-      const result = await pool.query(query, [`%${searchQuery}%`, limit, offset]);
+      const result = await pool.query(query, [`${searchQuery}%`, limit, offset]);
 
       res.json({ movies: result.rows, currentPage: page, maxPage: maxPage });
 

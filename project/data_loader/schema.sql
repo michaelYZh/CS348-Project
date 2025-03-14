@@ -70,3 +70,5 @@ CREATE TABLE watch_list (
     CHECK (LOWER(status) IN ('planning', 'watching', 'finished'))
 );
 
+CREATE INDEX lowercase_title ON netflix_titles (LOWER(title));
+
