@@ -1,0 +1,31 @@
+-- Search movies with "Star Wars" in title, sorted by release year
+                 title                  | release_year | show_type | duration |                                                                     description                                                                     
+----------------------------------------+--------------+-----------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Star Wars: Episode VIII: The Last Jedi |         2017 | Movie     | 152 min  | As the remnants of the Resistance flee Kylo Ren and the First Order, Rey seeks out Luke Skywalker – but he wants nothing more to do with the Force.
+(1 row)
+
+-- Performance without Index: 
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=600.31..600.42 rows=44 width=187) (actual time=9.785..9.786 rows=1 loops=1)
+   Sort Key: title
+   Sort Method: quicksort  Memory: 25kB
+   ->  Seq Scan on netflix_titles  (cost=0.00..599.11 rows=44 width=187) (actual time=9.223..9.742 rows=1 loops=1)
+         Filter: (lower(title) ~~ 'star wars%'::text)
+         Rows Removed by Filter: 8806
+ Planning Time: 0.105 ms
+ Execution Time: 9.816 ms
+
+-- Performance with Index on lower(title):
+                                                          QUERY PLAN                                                           
+-------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=139.45..139.56 rows=44 width=187) (actual time=0.082..0.083 rows=1 loops=1)
+   Sort Key: title
+   Sort Method: quicksort  Memory: 25kB
+   ->  Bitmap Heap Scan on netflix_titles  (cost=4.74..138.25 rows=44 width=187) (actual time=0.045..0.046 rows=1 loops=1)
+         Filter: (lower(title) ~~ 'star wars%'::text)
+         Heap Blocks: exact=1
+         ->  Bitmap Index Scan on lowercase_title  (cost=0.00..4.73 rows=44 width=0) (actual time=0.037..0.037 rows=1 loops=1)
+               Index Cond: ((lower(title) >= 'star wars'::text) AND (lower(title) < 'star wart'::text))
+ Planning Time: 0.342 ms
+ Execution Time: 0.128 ms
