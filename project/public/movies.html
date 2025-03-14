@@ -110,6 +110,40 @@
         a:hover {
             text-decoration: underline;
         }
+        .filters {
+            margin: 20px auto;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+          }
+        
+          .filters select {
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #2c2c2c;
+            color: #fff;
+            outline: none;
+          }
+        
+          .filters button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: red;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.3s ease;
+          }
+        
+          .filters button:hover {
+            background-color: darkred;
+          }
     </style>
 </head>
 <body>
@@ -128,6 +162,23 @@
             <input type="text" id="searchInput" placeholder="Search for a movie..." onkeypress="handleKeyPress(event)">
             <button onclick="searchMovie()">Search</button>
             <button onclick="window.location.href='add-show.html'" style="margin-left: 10px; background-color: #28a745;">Add New Show</button>
+        </div>
+        <div class="filters">
+            <select id="filterType">
+                <option value="">-- Filter by Type --</option>
+                <option value="Movie">Movie</option>
+                <option value="TV Show">TV Show</option>
+            </select>
+            
+            <select id="sortBy">
+                <option value="">-- Sort By --</option>
+                <option value="release_year_asc">Release Year (Asc)</option>
+                <option value="release_year_desc">Release Year (Desc)</option>
+                <option value="title_asc">Title (A-Z)</option>
+                <option value="title_desc">Title (Z-A)</option>
+            </select>
+            
+            <button onclick="applyFilters()">Apply</button>
         </div>
         <table id="moviesTable">
             <thead>
@@ -180,7 +231,31 @@
         async function fetchMovies(page = 1) {
             try {
                 const query = document.getElementById("searchInput").value.trim(); // response from JS, send the search'ed value
-                const response = await fetch(`/api/movies?search=${encodeURIComponent(query)}&page=${page}`); // results
+                const filterType = document.getElementById("filterType").value;
+                const sortOption = document.getElementById("sortBy").value;
+
+                let sortField = "";
+                let sortOrder = "";
+                if (sortOption === "release_year_asc") {
+                    sortField = "release_year";
+                    sortOrder = "ASC";
+                } else if (sortOption === "release_year_desc") {
+                    sortField = "release_year";
+                    sortOrder = "DESC";
+                } else if (sortOption === "title_asc") {
+                    sortField = "title";
+                    sortOrder = "ASC";
+                } else if (sortOption === "title_desc") {
+                    sortField = "title";
+                    sortOrder = "DESC";
+                }
+
+                const url = `/api/movies?search=${encodeURIComponent(query)}&page=${page}`
+                    + `&filter=${encodeURIComponent(filterType)}`
+                    + `&sortField=${encodeURIComponent(sortField)}`
+                    + `&sortOrder=${encodeURIComponent(sortOrder)}`;
+
+                const response = await fetch(url);
                 if (!response.ok) throw new Error("Failed to fetch movies");
 
                 const data = await response.json();
@@ -213,6 +288,10 @@
                 console.error("Error fetching movies:", error);
                 alert("Error loading movies. Please check the console.");
             }
+        }
+
+        function applyFilters() {
+            fetchMovies(1); // load page 1 with new filters
         }
 
         /* This is used to get the filtered results */
