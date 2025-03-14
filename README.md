@@ -77,6 +77,7 @@ Create a `.env` file in the root directory with the following information:
 ```
 DATABASE_URL=postgres://postgres:your_password@localhost:5432/netflix_reviews
 OMDB_API_KEY=<your_omdb_key>
+SESSION_SECRET=<your_session_key>
 ```
 Replace `your_password` with your PostgreSQL password and `<your_omdb_key>` with the API key you received.
 
