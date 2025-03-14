@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account - Netflix Movie Reviews</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 100px auto;
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      color: red;
+    }
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+    }
+    button {
+      width: 95%;
+      padding: 10px;
+      background-color: red;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: darkred;
+    }
+    a {
+      color: red;
+      text-decoration: none;
+      display: block;
+      margin-top: 15px;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    img {
+            width: 70%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="./resources/NetflixLogo.jpg" alt="Netflix Logo" wdith="">
+    <h1>Netflix Movie Reviews</h1>
+    <h3>Create a New Account</h3>
+    <form action="/register" method="POST">
+      <input name="username" type="email" placeholder="Email" required>
+      <input name="password" type="password" placeholder="Password" required>
+      <input name="confirmPassword" type="password" placeholder="Confirm Password" required>
+      <button type="submit">Register</button>
+    </form>
+    <a href="/">Already have an account? Login</a>
+  </div>
+</body>
+</html>

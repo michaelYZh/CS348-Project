@@ -14,12 +14,12 @@ engine = create_engine(db_url)
 
 # drop all tables and replace them, as this script re-writes data (and there are primary key dependencies)
 with engine.connect() as conn:
-    conn.execute(text("DROP TABLE IF EXISTS Users CASCADE;"))
+    #conn.execute(text("DROP TABLE IF EXISTS Users CASCADE;"))
     conn.execute(text("DROP TABLE IF EXISTS netflix_titles CASCADE;"))
     conn.commit()
 
 # Load into Postgresql
 data.to_sql("netflix_titles", engine, if_exists="replace", index=False)
-user_data.to_sql("users", engine, if_exists="replace", index=False)
+#user_data.to_sql("users", engine, if_exists="replace", index=False)
 
 print("data loaded into table `netflix_reviews` successfully! Old data removed and replaced with new data from csv!")

@@ -1,0 +1,41 @@
+-- Search movies with "Star Wars" in title, sorted by release year
+                 title                  | release_year | show_type | duration |                                                                     description                                                                     
+----------------------------------------+--------------+-----------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Star Wars: Episode VIII: The Last Jedi |         2017 | Movie     | 152 min  | As the remnants of the Resistance flee Kylo Ren and the First Order, Rey seeks out Luke Skywalker – but he wants nothing more to do with the Force.
+(1 row)
+
+-- Performance without Index: 
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=600.31..600.42 rows=44 width=187) (actual time=9.785..9.786 rows=1 loops=1)
+   Sort Key: title
+   Sort Method: quicksort  Memory: 25kB
+   ->  Seq Scan on netflix_titles  (cost=0.00..599.11 rows=44 width=187) (actual time=9.223..9.742 rows=1 loops=1)
+         Filter: (lower(title) ~~ 'star wars%'::text)
+         Rows Removed by Filter: 8806
+ Planning Time: 0.105 ms
+ Execution Time: 9.816 ms
+
+-- Performance with Index on lower(title):
+                                                          QUERY PLAN                                                           
+-------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=139.45..139.56 rows=44 width=187) (actual time=0.082..0.083 rows=1 loops=1)
+   Sort Key: title
+   Sort Method: quicksort  Memory: 25kB
+   ->  Bitmap Heap Scan on netflix_titles  (cost=4.74..138.25 rows=44 width=187) (actual time=0.045..0.046 rows=1 loops=1)
+         Filter: (lower(title) ~~ 'star wars%'::text)
+         Heap Blocks: exact=1
+         ->  Bitmap Index Scan on lowercase_title  (cost=0.00..4.73 rows=44 width=0) (actual time=0.037..0.037 rows=1 loops=1)
+               Index Cond: ((lower(title) >= 'star wars'::text) AND (lower(title) < 'star wart'::text))
+ Planning Time: 0.342 ms
+ Execution Time: 0.128 ms
+
+ show_id | show_type |             title             |          director           |                                                                      show_cast                                                                      |   country   |    date_added     | release_year | rating | duration |                   listed_in                    |                                                                       description                                                                        
+---------+-----------+-------------------------------+-----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------+-------------+-------------------+--------------+--------+----------+------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ s3653   | Movie     | ¡Ay, mi madre!                | Frank Ariza                 | Estefanía de los Santos, Secun de la Rosa, Terele Pávez, María Alfonsa Rosso, Mariola Fuentes, Alfonso Sánchez, Paz Vega, Marta Torné, Concha Galán | Spain       | July 19, 2019     |         2019 | TV-MA  | 81 min   | Comedies, International Movies                 | When her estranged mother suddenly dies, a woman must follow the quirky instructions laid out in the will in order to collect an important inheritance.
+ s2037   | Movie     | #Alive                        | Cho Il                      | Yoo Ah-in, Park Shin-hye                                                                                                                            | South Korea | September 8, 2020 |         2020 | TV-MA  | 99 min   | Horror Movies, International Movies, Thrillers | As a grisly virus rampages a city, a lone man stays locked inside his apartment, digitally cut off from seeking help and desperate to find a way out.
+ s2305   | Movie     | #AnneFrank - Parallel Stories | Sabina Fedeli, Anna Migotto | Helen Mirren, Gengher Gatti                                                                                                                         | Italy       | July 1, 2020      |         2019 | TV-14  | 95 min   | Documentaries, International Movies            | Through her diary, Anne Frank's story is retold alongside those of five Holocaust survivors in this poignant documentary from Oscar winner Helen Mirren.
+ s2482   | Movie     | #FriendButMarried             | Rako Prijanto               | Adipati Dolken, Vanesha Prescilla, Rendi Jhon, Beby Tsabina, Denira Wiraguna, Refal Hady, Diandra Agatha, Sari Nila                                 | Indonesia   | May 21, 2020      |         2018 | TV-G   | 102 min  | Dramas, International Movies, Romantic Movies  | Pining for his high school crush for years, a young man puts up his best efforts to move out of the friend zone until she reveals she's getting married.
+ s2325   | Movie     | #FriendButMarried 2           | Rako Prijanto               | Adipati Dolken, Mawar de Jongh, Sari Nila, Vonny Cornellya, Clay Gribble, Ivan Leonardy, Sarah Sechan, Jourdy Pranata                               | Indonesia   | June 28, 2020     |         2020 | TV-G   | 104 min  | Dramas, International Movies, Romantic Movies  | As Ayu and Ditto finally transition from best friends to newlyweds, a quick pregnancy creates uncertainty for the future of their young marriage.
+(5 rows)
+
