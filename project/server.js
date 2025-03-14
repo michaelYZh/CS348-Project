@@ -1,4 +1,5 @@
 require("dotenv").config();
+
 const express = require("express");
 const { Pool } = require("pg");
 const path = require("path");
@@ -11,6 +12,64 @@ const pool = new Pool({
 });
 
 const OMDB_API_KEY = process.env.OMDB_API_KEY
+
+
+const session = require("express-session");
+const passport = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
+const bcrypt = require("bcrypt");
+
+app.use(session({
+  secret: process.env.SESSION_SECRET, 
+  resave: false,
+  saveUninitialized: false,
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.use(new LocalStrategy(
+  async (username, password, done) => {
+    try {
+      const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+      if (result.rows.length === 0) {
+        return done(null, false, { message: 'Incorrect username.' });
+      }
+      const user = result.rows[0];
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) {
+        return done(null, false, { message: 'Incorrect password.' });
+      }
+      return done(null, user);
+    } catch (err) {
+      return done(err);
+    }
+  }
+));
+
+passport.serializeUser((user, done) => {
+  done(null, user.uid); 
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE uid = $1', [id]);
+    if (result.rows.length === 0) {
+      return done(new Error("User not found"));
+    }
+    done(null, result.rows[0]);
+  } catch (err) {
+    done(err);
+  }
+});
+
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/");
+}
+
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
@@ -25,21 +84,43 @@ app.get("/api/config", (req, res) => {
   res.json({ omdbApiKey: OMDB_API_KEY });
 });
 
-app.get("/login", async (req, res) => {
+app.post("/login", passport.authenticate("local", {
+  successRedirect: "/movies",
+  failureRedirect: "/"
+}));
+
+app.post("/register", async (req, res) => {
   try {
-    const username = req.query.username;
-    const password = req.query.password;
-    console.log(username,password);
-    const result = await pool.query(`SELECT count(username) FROM users GROUP BY username, password HAVING username='${username}' and password='${password}'`);
-    if (result.rows.length > 0) res.redirect("../movies");
-    else res.redirect("../");
+    const { username, password, confirmPassword } = req.body;
+
+    if (!username || !password || !confirmPassword) {
+      return res.status(400).send("All fields are required.");
+    }
+    if (password !== confirmPassword) {
+      return res.status(400).send("Passwords do not match.");
+    }
+
+    const existingUser = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).send("User already exists.");
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    await pool.query("INSERT INTO users (username, password) VALUES ($1, $2) RETURNING uid", [username, hashedPassword]);
+    res.redirect("/");
   } catch (err) {
     console.error(err);
-    res.status(500).send("Database error");
+    res.status(500).send("Error creating user account.");
   }
 });
 
-app.get("/movies", (req, res) => {
+app.get("/register", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "register.html"));
+});
+
+app.get("/movies", ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "movies.html"));
 });
 
