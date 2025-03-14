@@ -28,7 +28,7 @@ with engine.connect() as conn:
 # Load into Postgresql
 data.to_sql("netflix_titles", engine, if_exists="append", index=False)
 # TODO: FIX ABILITY TO INSERT USERS AND ACTUALLY HAVE THEM WORK
-# user_data.to_sql("users", engine, if_exists="append", index=False)
+user_data.to_sql("users", engine, if_exists="append", index=False)
 
 # reset the user_uid_table so that we create unique users
 with engine.connect() as conn:

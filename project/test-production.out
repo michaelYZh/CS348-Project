@@ -5,15 +5,16 @@
 
              title             | release_year | show_type | duration |                                                                       description                                                                        
 -------------------------------+--------------+-----------+----------+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ ¡Ay, mi madre!                |         2019 | Movie     | 81 min   | When her estranged mother suddenly dies, a woman must follow the quirky instructions laid out in the will in order to collect an important inheritance.
  #Alive                        |         2020 | Movie     | 99 min   | As a grisly virus rampages a city, a lone man stays locked inside his apartment, digitally cut off from seeking help and desperate to find a way out.
  #AnneFrank - Parallel Stories |         2019 | Movie     | 95 min   | Through her diary, Anne Frank's story is retold alongside those of five Holocaust survivors in this poignant documentary from Oscar winner Helen Mirren.
  #FriendButMarried             |         2018 | Movie     | 102 min  | Pining for his high school crush for years, a young man puts up his best efforts to move out of the friend zone until she reveals she's getting married.
  #FriendButMarried 2           |         2020 | Movie     | 104 min  | As Ayu and Ditto finally transition from best friends to newlyweds, a quick pregnancy creates uncertainty for the future of their young marriage.
- #Roxy                         |         2018 | Movie     | 105 min  | A teenage hacker with a huge nose helps a cool kid woo a girl that he’s secretly in love with.
 (5 rows)
 
  count 
 -------
-(0 rows)
+     1
+(1 row)
 
 INSERT 0 1
