@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Show - Netflix Reviews</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+        h1 {
+            color: red;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], 
+        input[type="number"], 
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #333;
+            color: white;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: darkred;
+        }
+        .nav-buttons {
+            margin: 20px 0;
+        }
+        .success-message {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        .error-message {
+            background-color: #f44336;
+            color: white;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Add New Show to Netflix Database</h1>
+        
+        <div class="nav-buttons">
+            <button onclick="window.location.href='movies.html'">Back to Movies</button>
+        </div>
+        
+        <div id="successMessage" class="success-message">
+            Show added successfully!
+        </div>
+        
+        <div id="errorMessage" class="error-message">
+            Error adding show. Please try again.
+        </div>
+        
+        <form id="addShowForm">
+            <div class="form-group">
+                <label for="showId">Show ID (unique identifier):</label>
+                <input type="text" id="showId" name="showId" required placeholder="e.g., s12345">
+            </div>
+            
+            <div class="form-group">
+                <label for="showType">Show Type:</label>
+                <select id="showType" name="showType" required>
+                    <option value="Movie">Movie</option>
+                    <option value="TV Show">TV Show</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" required placeholder="Enter show title">
+            </div>
+            
+            <div class="form-group">
+                <label for="director">Director:</label>
+                <input type="text" id="director" name="director" placeholder="Enter director name(s)">
+            </div>
+            
+            <div class="form-group">
+                <label for="showCast">Cast:</label>
+                <textarea id="showCast" name="showCast" rows="3" placeholder="Enter cast members, separated by commas"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="country">Country:</label>
+                <input type="text" id="country" name="country" placeholder="Enter country of origin">
+            </div>
+            
+            <div class="form-group">
+                <label for="dateAdded">Date Added:</label>
+                <input type="date" id="dateAdded" name="dateAdded">
+            </div>
+            
+            <div class="form-group">
+                <label for="releaseYear">Release Year:</label>
+                <input type="number" id="releaseYear" name="releaseYear" min="1900" max="2099" required placeholder="Enter release year">
+            </div>
+            
+            <div class="form-group">
+                <label for="rating">Rating:</label>
+                <select id="rating" name="rating">
+                    <option value="">Select a rating</option>
+                    <option value="G">G</option>
+                    <option value="PG">PG</option>
+                    <option value="PG-13">PG-13</option>
+                    <option value="R">R</option>
+                    <option value="NC-17">NC-17</option>
+                    <option value="TV-Y">TV-Y</option>
+                    <option value="TV-Y7">TV-Y7</option>
+                    <option value="TV-G">TV-G</option>
+                    <option value="TV-PG">TV-PG</option>
+                    <option value="TV-14">TV-14</option>
+                    <option value="TV-MA">TV-MA</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="duration">Duration:</label>
+                <input type="text" id="duration" name="duration" placeholder="e.g., 90 min or 2 Seasons">
+            </div>
+            
+            <div class="form-group">
+                <label for="listedIn">Categories (comma separated):</label>
+                <input type="text" id="listedIn" name="listedIn" placeholder="e.g., Dramas, Comedies, Action">
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" rows="4" placeholder="Enter show description"></textarea>
+            </div>
+            
+            <button type="submit">Add Show</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('addShowForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = {
+                showId: document.getElementById('showId').value,
+                showType: document.getElementById('showType').value,
+                title: document.getElementById('title').value,
+                director: document.getElementById('director').value,
+                showCast: document.getElementById('showCast').value,
+                country: document.getElementById('country').value,
+                dateAdded: document.getElementById('dateAdded').value,
+                releaseYear: document.getElementById('releaseYear').value,
+                rating: document.getElementById('rating').value,
+                duration: document.getElementById('duration').value,
+                listedIn: document.getElementById('listedIn').value,
+                description: document.getElementById('description').value
+            };
+            
+            // Send data to server
+            fetch('/api/add-show', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Show success message
+                document.getElementById('successMessage').style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'none';
+                
+                // Reset form
+                document.getElementById('addShowForm').reset();
+                
+                // Hide success message after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('successMessage').style.display = 'none';
+                }, 3000);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Show error message
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('successMessage').style.display = 'none';
+                
+                // Hide error message after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('errorMessage').style.display = 'none';
+                }, 3000);
+            });
+        });
+    </script>
+</body>
+</html> 
