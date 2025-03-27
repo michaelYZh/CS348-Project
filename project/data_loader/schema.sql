@@ -7,20 +7,18 @@ DROP TABLE IF EXISTS Users CASCADE;
 DROP TABLE IF EXISTS netflix_titles CASCADE;
 
 CREATE TABLE netflix_titles (
-    show_id VARCHAR(10),
+    show_id SERIAL PRIMARY KEY,
     show_type VARCHAR(20) NOT NULL,
     title VARCHAR(255) NOT NULL,
     director VARCHAR(255),
     show_cast TEXT,
-    country VARCHAR(100),
+    country VARCHAR(255),
     date_added DATE,
     release_year INT,
     rating VARCHAR(20),
     duration VARCHAR(20),
     listed_in TEXT,
-    description TEXT,
-    PRIMARY KEY (show_id, release_year, title),
-    UNIQUE(show_id)
+    description TEXT
 );
 
 CREATE TABLE users (
@@ -38,7 +36,7 @@ CREATE TABLE user_information (
 );
 
 CREATE TABLE ratings (
-    show_id VARCHAR(10) NOT NULL,
+    show_id INTEGER NOT NULL,
     uid INTEGER NOT NULL,
     score INTEGER CHECK (score BETWEEN 0 AND 10),
     review TEXT,
@@ -48,7 +46,7 @@ CREATE TABLE ratings (
 );
 
 CREATE TABLE show_tiers (
-    show_id VARCHAR(10) NOT NULL,
+    show_id INTEGER NOT NULL,
     uid INTEGER NOT NULL,
     title VARCHAR(255) NOT NULL,
     tier VARCHAR(1) NOT NULL,
@@ -59,7 +57,7 @@ CREATE TABLE show_tiers (
 );
 
 CREATE TABLE watch_list (
-    show_id VARCHAR(10) NOT NULL,
+    show_id INTEGER NOT NULL,
     uid INTEGER NOT NULL,
     status VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,

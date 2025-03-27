@@ -95,10 +95,6 @@
         </div>
         
         <form id="addShowForm">
-            <div class="form-group">
-                <label for="showId">Show ID (unique identifier):</label>
-                <input type="text" id="showId" name="showId" required placeholder="e.g., s12345">
-            </div>
             
             <div class="form-group">
                 <label for="showType">Show Type:</label>
@@ -180,8 +176,7 @@
             e.preventDefault();
             
             // Get form data
-            const formData = {
-                showId: document.getElementById('showId').value,
+            const formData = {  
                 showType: document.getElementById('showType').value,
                 title: document.getElementById('title').value,
                 director: document.getElementById('director').value,
