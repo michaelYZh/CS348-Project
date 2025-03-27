@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recently Added - Netflix Reviews</title>
+    <style>
+        a {
+            color: white;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+        h1 {
+            color: red;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: darkred;
+        }
+        .nav-buttons {
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+            text-align: center;
+        }
+        th {
+            background-color: red;
+            color: white;
+        }
+        tr:hover {
+            background-color: #292929;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Recently Added</h1>
+        
+        <div class="nav-buttons">
+            <button onclick="window.location.href='movies'">Back to Movies</button>
+        </div>
+        <table id="moviesTable">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Release Year</th>
+                    <th>Type</th>
+                    <th>Duration</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Waiting for javascript to load data, to then insert and populate with data -->
+            </tbody>
+        </table>
+    </div>
+</body>
+<script>
+        document.addEventListener("DOMContentLoaded", async function () {
+            const response = await fetch(`/api/recently-added`);
+            if (!response.ok) throw new Error("Failed to fetch movies");
+            const movies = await response.json();
+            const tableBody = document.querySelector("#moviesTable tbody");
+            tableBody.innerHTML = ""; // clear previous rows for new searches
+            // format display of values
+            movies.forEach(movie => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><a href="movie.html?title=${encodeURIComponent(movie.title)}">${movie.title}</a></td>
+                    <td>${movie.release_year}</td>
+                    <td>${movie.show_type}</td>
+                    <td>${movie.duration}</td>
+                    <td>${movie.description}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        });
+</script>
+</html> 
