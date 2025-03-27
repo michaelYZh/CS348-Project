@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const { Pool } = require("pg");
 const path = require("path");
+const stringSimilarity = require('string-similarity');
 
 const app = express();
 const port = 3000;
@@ -20,9 +21,10 @@ const LocalStrategy = require("passport-local").Strategy;
 const bcrypt = require("bcrypt");
 
 app.use(session({
-  secret: process.env.SESSION_SECRET, 
+  secret: process.env.SESSION_SECRET || 'default-secret-key', 
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
+  cookie: { secure: false }
 }));
 
 app.use(passport.initialize());
@@ -48,19 +50,11 @@ passport.use(new LocalStrategy(
 ));
 
 passport.serializeUser((user, done) => {
-  done(null, user.uid); 
+  done(null, user);
 });
 
-passport.deserializeUser(async (id, done) => {
-  try {
-    const result = await pool.query('SELECT * FROM users WHERE uid = $1', [id]);
-    if (result.rows.length === 0) {
-      return done(new Error("User not found"));
-    }
-    done(null, result.rows[0]);
-  } catch (err) {
-    done(err);
-  }
+passport.deserializeUser((user, done) => {
+  done(null, user);
 });
 
 function ensureAuthenticated(req, res, next) {
@@ -81,7 +75,7 @@ app.get("/", (req, res) => {
 
 // OMDB API key
 app.get("/api/config", (req, res) => {
-  res.json({ omdbApiKey: OMDB_API_KEY });
+  res.json({ omdbApiKey: OMDB_API_KEY || null });
 });
 
 app.post("/login", passport.authenticate("local", {
@@ -135,6 +129,7 @@ app.get("/api/movies", async (req, res) => {
       const page = parseInt(req.query.page) || 1;
       const limit = 100;
       const offset = (page - 1) * limit;
+      const similarityThreshold = 0.2; // Lower threshold for better partial matches
 
       const filterType = req.query.filter || ""; // e.g., "Movie" or "TV Show"
       let sortField = req.query.sortField || "title"; // default: sort by title
@@ -148,37 +143,97 @@ app.get("/api/movies", async (req, res) => {
       // Ensure sortOrder is either ASC or DESC
       sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
 
-      // Build the count query with filtering
-      let countQuery = `
-          SELECT COUNT(*) AS total FROM netflix_titles
-          WHERE LOWER(title) LIKE LOWER($1)
-      `;
-      let countParams = [`%${searchQuery}%`];
-      if (filterType) {
-          countQuery += " AND show_type = $2";
-          countParams.push(filterType);
+      let result;
+      let totalMovies;
+      let maxPage;
+
+      if (searchQuery) {
+          // Get all titles and cast members for fuzzy search
+          const allResults = await pool.query(`
+              SELECT title, release_year, show_type, duration, description, show_cast
+              FROM netflix_titles
+              ${filterType ? 'WHERE show_type = $1' : ''}
+          `, filterType ? [filterType] : []);
+          
+          // Filter results using string similarity and partial matching
+          const filteredRows = allResults.rows.filter(movie => {
+              // Check if the search query is a substring of the title (case-insensitive)
+              const isPartialMatch = movie.title.toLowerCase().includes(searchQuery.toLowerCase());
+              
+              // Also keep the fuzzy matching for typo tolerance
+              const titleSimilarity = stringSimilarity.compareTwoStrings(
+                  searchQuery.toLowerCase(),
+                  movie.title.toLowerCase()
+              );
+              
+              // Check cast members if present
+              let castSimilarity = 0;
+              if (movie.show_cast) {
+                  const castMembers = movie.show_cast.split(',');
+                  castSimilarity = Math.max(...castMembers.map(cast => 
+                      stringSimilarity.compareTwoStrings(
+                          searchQuery.toLowerCase(),
+                          cast.trim().toLowerCase()
+                      )
+                  ));
+              }
+              
+              return isPartialMatch || titleSimilarity > similarityThreshold || castSimilarity > similarityThreshold;
+          });
+
+          // Sort results: exact/partial matches first, then by similarity score
+          filteredRows.sort((a, b) => {
+              const aIsPartial = a.title.toLowerCase().includes(searchQuery.toLowerCase());
+              const bIsPartial = b.title.toLowerCase().includes(searchQuery.toLowerCase());
+              
+              if (aIsPartial && !bIsPartial) return -1;
+              if (!aIsPartial && bIsPartial) return 1;
+              
+              const aSimilarity = stringSimilarity.compareTwoStrings(
+                  searchQuery.toLowerCase(),
+                  a.title.toLowerCase()
+              );
+              const bSimilarity = stringSimilarity.compareTwoStrings(
+                  searchQuery.toLowerCase(),
+                  b.title.toLowerCase()
+              );
+              return bSimilarity - aSimilarity;
+          });
+
+          totalMovies = filteredRows.length;
+          maxPage = Math.ceil(totalMovies / limit);
+          
+          // Paginate the results
+          result = {
+              rows: filteredRows.slice(offset, offset + limit)
+          };
+      } else {
+          // If no search query, use existing functionality
+          // Build the count query with filtering
+          let countQuery = `
+              SELECT COUNT(*) AS total FROM netflix_titles
+              ${filterType ? 'WHERE show_type = $1' : ''}
+          `;
+          let countParams = filterType ? [filterType] : [];
+          const countResult = await pool.query(countQuery, countParams);
+          totalMovies = parseInt(countResult.rows[0].total);
+          maxPage = Math.ceil(totalMovies / limit);
+
+          // Build the main query with filtering and sorting
+          let query = `
+              SELECT title, release_year, show_type, duration, description
+              FROM netflix_titles
+              ${filterType ? 'WHERE show_type = $1' : ''}
+          `;
+
+          let queryParams = filterType ? [filterType] : [];
+          // Append sorting, limit, and offset clauses
+          query += ` ORDER BY ${sortField} ${sortOrder} LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2};`;
+          queryParams.push(limit, offset);
+
+          result = await pool.query(query, queryParams);
       }
-      const countResult = await pool.query(countQuery, countParams);
-      const totalMovies = parseInt(countResult.rows[0].total);
-      const maxPage = Math.ceil(totalMovies / limit);
 
-      // Build the main query with filtering and sorting
-      let query = `
-          SELECT title, release_year, show_type, duration, description
-          FROM netflix_titles
-          WHERE LOWER(title) LIKE LOWER($1)
-      `;
-
-      let queryParams = [`%${searchQuery}%`];
-      if (filterType) {
-          query += " AND show_type = $2";
-          queryParams.push(filterType);
-      }
-      // Append sorting, limit, and offset clauses
-      query += ` ORDER BY ${sortField} ${sortOrder} LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2};`;
-      queryParams.push(limit, offset);
-
-      const result = await pool.query(query, queryParams);
       res.json({ movies: result.rows, currentPage: page, maxPage: maxPage });
   } catch (err) {
       console.error("Raw SQL Query Error:", err);
