@@ -357,6 +357,21 @@ app.post("/api/add-show", async (req, res) => {
 
     const result = await pool.query(insertQuery, values);
     
+    // After successful addition, refresh relevant view
+    if (showType === 'Movie') {
+      await pool.query('REFRESH MATERIALIZED VIEW trending_movies');
+    } else if (showType === 'TV Show') {
+      await pool.query('REFRESH MATERIALIZED VIEW trending_tv_shows');
+    }
+    
+    // Possibly refresh other views as needed
+    if (releaseYear >= new Date().getFullYear() - 2) {
+      await pool.query('REFRESH MATERIALIZED VIEW new_releases');
+    }
+    if (releaseYear < 2000) {
+      await pool.query('REFRESH MATERIALIZED VIEW classic_films');
+    }
+    
     res.status(201).json({ 
       message: "Show added successfully", 
       show: result.rows[0] 
@@ -365,6 +380,34 @@ app.post("/api/add-show", async (req, res) => {
   } catch (err) {
     console.error("Error adding new show:", err);
     res.status(500).json({ error: "Database error while adding new show" });
+  }
+});
+
+async function refreshMaterializedViews() {
+  try {
+    await pool.query('REFRESH MATERIALIZED VIEW trending_movies');
+    await pool.query('REFRESH MATERIALIZED VIEW trending_tv_shows');
+    await pool.query('REFRESH MATERIALIZED VIEW new_releases');
+    await pool.query('REFRESH MATERIALIZED VIEW classic_films');
+    console.log('Materialized views refreshed successfully');
+  } catch (error) {
+    console.error('Error refreshing materialized views:', error);
+  }
+}
+
+// Refresh views once when server starts
+refreshMaterializedViews();
+
+// Refresh views periodically (e.g., once a day)
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+setInterval(refreshMaterializedViews, ONE_DAY_MS);
+
+app.post('/api/admin/refresh-views', async (req, res) => {
+  try {
+    await refreshMaterializedViews();
+    res.json({ success: true, message: 'Views refreshed successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
