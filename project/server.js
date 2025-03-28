@@ -19,6 +19,11 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const bcrypt = require("bcrypt");
 
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
 app.use(session({
   secret: process.env.SESSION_SECRET, 
   resave: false,
@@ -120,8 +125,10 @@ app.get("/register", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "register.html"));
 });
 
-app.get("/movies", ensureAuthenticated, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "movies.html"));
+app.get("/movies", (req, res) => {
+    // Pass the category parameter to the movies page
+    const category = req.query.category || '';
+    res.sendFile(path.join(__dirname, 'public', 'movies.html'));
 });
 
 app.get("/add-show", (req, res) => {
@@ -130,60 +137,95 @@ app.get("/add-show", (req, res) => {
 
 // used for searching and displaying all moveis, 2-in-1 function
 app.get("/api/movies", async (req, res) => {
-  try {
-      const searchQuery = req.query.search || "";
-      const page = parseInt(req.query.page) || 1;
-      const limit = 100;
-      const offset = (page - 1) * limit;
+    try {
+        const searchQuery = req.query.search || "";
+        const page = parseInt(req.query.page) || 1;
+        const limit = 100;
+        const offset = (page - 1) * limit;
+        const category = req.query.category || "";
+        
+        console.log("API request with category:", category);
 
-      const filterType = req.query.filter || ""; // e.g., "Movie" or "TV Show"
-      let sortField = req.query.sortField || "title"; // default: sort by title
-      let sortOrder = req.query.sortOrder || "ASC";     // default: ascending order
+        let query, countQuery, queryParams;
 
-      // Whitelist allowed sort fields to prevent SQL injection
-      const validSortFields = ["title", "release_year"];
-      if (!validSortFields.includes(sortField)) {
-          sortField = "title";
-      }
-      // Ensure sortOrder is either ASC or DESC
-      sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
+        if (category === "trending-movies") {
+            query = "SELECT * FROM trending_movies LIMIT $1 OFFSET $2";
+            countQuery = "SELECT COUNT(*) FROM trending_movies";
+            queryParams = [limit, offset];
+        } 
+        else if (category === "trending-tv-shows") {
+            query = "SELECT * FROM trending_tv_shows LIMIT $1 OFFSET $2";
+            countQuery = "SELECT COUNT(*) FROM trending_tv_shows";
+            queryParams = [limit, offset];
+        }
+        else if (category === "new-releases") {
+            query = "SELECT * FROM new_releases LIMIT $1 OFFSET $2";
+            countQuery = "SELECT COUNT(*) FROM new_releases";
+            queryParams = [limit, offset];
+        }
+        else if (category === "classic-films") {
+            query = "SELECT * FROM classic_films LIMIT $1 OFFSET $2";
+            countQuery = "SELECT COUNT(*) FROM classic_films";
+            queryParams = [limit, offset];
+        }
+        else {
+            // Regular search
+            queryParams = [];
+            let whereClause = "";
+            
+            if (searchQuery) {
+                whereClause = "WHERE LOWER(title) LIKE LOWER($1)";
+                queryParams.push(`%${searchQuery}%`);
+            }
+            
+            if (req.query.filter) {
+                if (whereClause) {
+                    whereClause += ` AND show_type = $${queryParams.length + 1}`;
+                } else {
+                    whereClause = `WHERE show_type = $1`;
+                }
+                queryParams.push(req.query.filter);
+            }
+            
+            countQuery = `SELECT COUNT(*) FROM netflix_titles ${whereClause}`;
+            
+            let sortField = req.query.sortField || "title";
+            let sortOrder = req.query.sortOrder || "ASC";
+            if (!["title", "release_year"].includes(sortField)) {
+                sortField = "title";
+            }
+            sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
+            
+            query = `
+                SELECT title, release_year, show_type, duration, description
+                FROM netflix_titles
+                ${whereClause}
+                ORDER BY ${sortField} ${sortOrder}
+                LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
+            `;
+            
+            queryParams.push(limit, offset);
+        }
 
-      // Build the count query with filtering
-      let countQuery = `
-          SELECT COUNT(*) AS total FROM netflix_titles
-          WHERE LOWER(title) LIKE LOWER($1)
-      `;
-      let countParams = [`%${searchQuery}%`];
-      if (filterType) {
-          countQuery += " AND show_type = $2";
-          countParams.push(filterType);
-      }
-      const countResult = await pool.query(countQuery, countParams);
-      const totalMovies = parseInt(countResult.rows[0].total);
-      const maxPage = Math.ceil(totalMovies / limit);
+        console.log("Query:", query);
+        console.log("Params:", queryParams);
 
-      // Build the main query with filtering and sorting
-      let query = `
-          SELECT title, release_year, show_type, duration, description
-          FROM netflix_titles
-          WHERE LOWER(title) LIKE LOWER($1)
-      `;
+        // Execute queries
+        const countResult = await pool.query(countQuery, category ? [] : queryParams.slice(0, -2));
+        const result = await pool.query(query, queryParams);
+        
+        const totalMovies = parseInt(countResult.rows[0].count);
+        const maxPage = Math.ceil(totalMovies / limit);
 
-      let queryParams = [`%${searchQuery}%`];
-      if (filterType) {
-          query += " AND show_type = $2";
-          queryParams.push(filterType);
-      }
-      // Append sorting, limit, and offset clauses
-      query += ` ORDER BY ${sortField} ${sortOrder} LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2};`;
-      queryParams.push(limit, offset);
-
-      const result = await pool.query(query, queryParams);
-      res.json({ movies: result.rows, currentPage: page, maxPage: maxPage });
-  } catch (err) {
-      console.error("Raw SQL Query Error:", err);
-      res.status(500).json({ error: "Database query error" });
-  }
+        res.json({ 
+            movies: result.rows, 
+            currentPage: page, 
+            maxPage: maxPage
+        });
+    } catch (err) {
+        console.error("Error:", err);
+        res.status(500).json({ error: "Database query error", details: err.message });
+    }
 });
 
 
