@@ -49,22 +49,6 @@ After loading the data, create the materialized views for optimized access:
 psql -U <username> -d netflix_reviews -f views.sql
 ```
 
-## Working with Materialized Views
-
-### What are Materialized Views?
-Materialized views are database objects that store the results of a query physically. Unlike regular views which run their query each time they're accessed, materialized views cache the results, making them much faster for frequent access patterns.
-
-### Benefits of Using Materialized Views
-- **Improved Performance**: Pre-computed results mean faster page loads
-- **Reduced Server Load**: Complex queries only run when refreshing the view, not on every access
-- **Better User Experience**: Quicker response times for common operations
-
-### When to Refresh Materialized Views
-Views should be refreshed when:
-- New content is added to the database that should appear in trending categories
-- Old content is removed or updated
-- Periodically to ensure trending content stays current
-
 ### How to Refresh Views
 Connect to the database and run the refresh commands:
 
@@ -79,9 +63,3 @@ REFRESH MATERIALIZED VIEW trending_tv_shows;
 REFRESH MATERIALIZED VIEW new_releases;
 REFRESH MATERIALIZED VIEW classic_films;
 ```
-
-### Future Improvements
-In a production environment, you might want to:
-- Set up automated scheduled refreshes
-- Implement concurrent refreshes to avoid locking the views
-- Add refresh triggers that update views when the underlying data changes

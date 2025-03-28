@@ -81,3 +81,27 @@ Visit `https://www.omdbapi.com/apikey.aspx` and create an account using your ema
 ### 4. Create `.env` file
 Create a `.env` file in the root directory with the following information:
 ```
+DATABASE_URL=postgres://postgres:your_password@localhost:5432/netflix_reviews
+OMDB_API_KEY=<your_omdb_key>
+SESSION_SECRET=<your_session_key>
+```
+Replace `your_password` with your PostgreSQL password and `<your_omdb_key>` with the API key you received.
+
+### 5. Run the server
+```sh
+cd project
+node server.js
+```
+
+### 6. Access the Application
+Open your browser and navigate to:
+```
+http://localhost:3000
+```
+
+## Features
+- Browse Netflix shows and movies
+- Search and filter content
+- Add new shows to the database
+- Rate and review content
+- Create and manage watchlists
