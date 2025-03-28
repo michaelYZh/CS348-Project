@@ -24,7 +24,7 @@ LIMIT 100;
 CREATE MATERIALIZED VIEW new_releases AS
 SELECT title, release_year, show_type, duration, description, date_added
 FROM netflix_titles
-WHERE release_year >= EXTRACT(YEAR FROM CURRENT_DATE) - 2
+WHERE release_year >= EXTRACT(YEAR FROM CURRENT_DATE) - 4
 ORDER BY release_year DESC, date_added DESC
 LIMIT 100;
 

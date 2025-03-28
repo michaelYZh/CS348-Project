@@ -235,6 +235,8 @@
         /* Variables for dynamic page loading */
         let currPage = 1
         let maxPage = 1
+        let isLoading = false;
+
         document.addEventListener("DOMContentLoaded", function () {
             console.log('Page loaded - initializing movies');
             // Get current URL parameters
@@ -367,57 +369,82 @@
             }
         }
 
-        function loadMovies() {
-            console.log("Loading movies");
+        // Use a self-executing function to isolate variables
+        (function() {
+            // Flag to ensure loadMovies only executes once per page load
+            let hasLoadedMovies = false;
             
-            const urlParams = new URLSearchParams(window.location.search);
-            const page = urlParams.get('page') || 1;
-            const category = urlParams.get('category') || '';
-            
-            console.log(`Loading category: "${category}", page: ${page}`);
-            
-            // Get the table body element
-            const tableBody = document.querySelector('#moviesTable tbody');
-            if (!tableBody) {
-                console.error("Table body element not found!");
-                return;
-            }
-            
-            // Show loading message
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center">Loading...</td></tr>';
-            
-            // Make the API call
-            fetch(`/api/movies?page=${page}&search=&filter=&category=${category}`)
-                .then(response => response.json())
-                .then(data => {
-                    console.log(`Received ${data.movies?.length || 0} movies`);
-                    
-                    // Clear table body
-                    tableBody.innerHTML = '';
-                    
-                    if (!data.movies || data.movies.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center">No movies found</td></tr>';
-                        return;
-                    }
-                    
-                    // Create and append table rows
-                    data.movies.forEach(movie => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${movie.title || 'Unknown'}</td>
-                            <td>${movie.release_year || 'Unknown'}</td>
-                            <td>${movie.show_type || 'Unknown'}</td>
-                            <td>${movie.duration || 'Unknown'}</td>
-                            <td>${movie.description || 'No description'}</td>
-                        `;
-                        tableBody.appendChild(row);
+            // Replace your existing loadMovies function with this one
+            window.loadMovies = function() {
+                // Check if we've already loaded movies once
+                if (hasLoadedMovies) {
+                    console.log("PREVENTED duplicate movie load");
+                    return;
+                }
+                
+                console.log("LOADING MOVIES - first call");
+                hasLoadedMovies = true;
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const page = urlParams.get('page') || 1;
+                const category = urlParams.get('category') || '';
+                
+                // Get the table body element
+                const tableBody = document.querySelector('#moviesTable tbody');
+                if (!tableBody) {
+                    console.error("Table body element not found!");
+                    return;
+                }
+                
+                // Show loading message
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center">Loading...</td></tr>';
+                
+                // Make the API call
+                fetch(`/api/movies?page=${page}&search=&filter=&category=${category}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(`Received ${data.movies?.length || 0} movies`);
+                        
+                        // Clear table body
+                        tableBody.innerHTML = '';
+                        
+                        if (!data.movies || data.movies.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center">No movies found</td></tr>';
+                            return;
+                        }
+                        
+                        // Create and append table rows
+                        data.movies.forEach(movie => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${movie.title || 'Unknown'}</td>
+                                <td>${movie.release_year || 'Unknown'}</td>
+                                <td>${movie.show_type || 'Unknown'}</td>
+                                <td>${movie.duration || 'Unknown'}</td>
+                                <td>${movie.description || 'No description'}</td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                        
+                        // Reset the flag after a delay (to allow for pagination)
+                        setTimeout(() => {
+                            hasLoadedMovies = false;
+                        }, 500);
+                    })
+                    .catch(error => {
+                        console.error("Error loading movies:", error);
+                        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red">Error: ${error.message}</td></tr>`;
+                        hasLoadedMovies = false;
                     });
-                })
-                .catch(error => {
-                    console.error("Error loading movies:", error);
-                    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red">Error: ${error.message}</td></tr>`;
-                });
-        }
+            };
+            
+            // Set up a single event listener for page load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadMovies, { once: true });
+            } else {
+                loadMovies();
+            }
+        })();
 
         function highlightActiveButton(category) {
             document.querySelectorAll('a.category-btn').forEach(btn => {
@@ -435,6 +462,7 @@
         }
 
         function loadMoviesWithCategory(category, page = 1) {
+            console.log('loadMovies called from:', new Error().stack);
             console.log(`Loading movies with category: ${category}, page: ${page}`);
             
             // Show loading message
@@ -530,12 +558,6 @@
                 pagination.appendChild(nextButton);
             }
         }
-
-        // Single event listener for page load
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log("Page loaded");
-            loadMovies();
-        });
     </script>
 </body>
 </html>
