@@ -79,7 +79,8 @@
         <th>Title</th>
         <th>Status</th>
         <th>Tier</th>
-        <th>Update Tier</th>
+        <th>Update</th>
+        <th>Added On</th>
       </tr>
     </thead>
     <tbody id="watchlistTable">
@@ -91,6 +92,17 @@
   <script>
     // Called on page load to populate the watchlist
     document.addEventListener("DOMContentLoaded", loadWatchlist);
+
+    function capitalize(str) {
+        return str ? str.charAt(0).toUpperCase() + str.slice(1) : "-";
+    }
+
+    function formatDate(isoString) {
+        if (!isoString) return "-";
+        const date = new Date(isoString);
+        return date.toISOString().split("T")[0]; // YYYY-MM-DD
+    }
+
 
     async function loadWatchlist() {
         try {
@@ -123,10 +135,18 @@
 
             row.innerHTML = `
                 <td>${item.title}</td>
-                <td>${statusSelect}</td>
-                <td>${item.tier ? item.tier.toUpperCase() : "-"}</td>
-                <td>${tierSelect} ${btn}</td>
+                <td>
+                    <div>${capitalize(item.status)}</div>
+                    ${statusSelect}
+                </td>
+                <td>
+                    <div>${item.tier ? item.tier.toUpperCase() : "-"}</div>
+                    ${tierSelect}
+                </td>
+                <td>${btn}</td>
+                <td>${formatDate(item.added_at)}</td>
             `;
+
 
             table.appendChild(row);
             });

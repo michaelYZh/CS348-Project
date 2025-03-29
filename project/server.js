@@ -412,7 +412,7 @@ app.get("/api/watchlist", ensureAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
     const query = `
-      SELECT w.show_id, w.status, w.tier, nt.title
+      SELECT w.show_id, w.status, w.tier, w.added_at, nt.title
       FROM watch_list w
       JOIN netflix_titles nt ON w.show_id = nt.show_id
       WHERE w.uid = $1
