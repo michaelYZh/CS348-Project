@@ -1,0 +1,167 @@
+<!-- watchlist.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Watchlist</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      color: #ff4c4c;
+      margin-top: 20px;
+    }
+    table {
+      width: 90%;
+      max-width: 1000px;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #333;
+    }
+    th {
+      background-color: #ff4c4c;
+      color: white;
+    }
+    tr:hover {
+      background-color: #2a2a2a;
+    }
+    .back-link {
+      display: inline-block;
+      margin: 20px auto;
+      padding: 10px 15px;
+      background-color: #ff4c4c;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+    .back-link:hover {
+      background-color: #cc0000;
+    }
+    select, button {
+      padding: 6px 12px;
+      border-radius: 5px;
+      border: none;
+      font-size: 14px;
+    }
+    select {
+      background-color: #2c2c2c;
+      color: white;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <h1>My Watchlist</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Tier</th>
+        <th>Update Tier</th>
+      </tr>
+    </thead>
+    <tbody id="watchlistTable">
+      <!-- JS dynamically inserts rows here -->
+    </tbody>
+  </table>
+  <a class="back-link" href="movies.html">Back to Movies</a>
+
+  <script>
+    // Called on page load to populate the watchlist
+    document.addEventListener("DOMContentLoaded", loadWatchlist);
+
+    async function loadWatchlist() {
+        try {
+            const response = await fetch("/api/watchlist", { credentials: "include" });
+            const data = await response.json();
+            const table = document.getElementById("watchlistTable");
+            table.innerHTML = "";
+
+            data.forEach(item => {
+            const row = document.createElement("tr");
+
+            const statusSelect = `
+                <select id="status-${item.show_id}">
+                <option value="planning"${item.status === 'planning' ? ' selected' : ''}>Planning</option>
+                <option value="watching"${item.status === 'watching' ? ' selected' : ''}>Watching</option>
+                <option value="finished"${item.status === 'finished' ? ' selected' : ''}>Finished</option>
+                </select>`;
+
+            const tierSelect = `
+                <select id="tier-${item.show_id}">
+                <option value="">--</option>
+                <option value="s"${item.tier === 's' ? ' selected' : ''}>S</option>
+                <option value="a"${item.tier === 'a' ? ' selected' : ''}>A</option>
+                <option value="b"${item.tier === 'b' ? ' selected' : ''}>B</option>
+                <option value="c"${item.tier === 'c' ? ' selected' : ''}>C</option>
+                <option value="d"${item.tier === 'd' ? ' selected' : ''}>D</option>
+                </select>`;
+
+            const btn = `<button onclick="updateWatchlist('${item.show_id}')">Save</button>`;
+
+            row.innerHTML = `
+                <td>${item.title}</td>
+                <td>${statusSelect}</td>
+                <td>${item.tier ? item.tier.toUpperCase() : "-"}</td>
+                <td>${tierSelect} ${btn}</td>
+            `;
+
+            table.appendChild(row);
+            });
+        } catch (error) {
+            console.error("Error loading watchlist:", error);
+            alert("Failed to load watchlist.");
+        }
+    }
+
+    async function updateWatchlist(showId) {
+        const newStatus = document.getElementById(`status-${showId}`).value;
+        const newTier = document.getElementById(`tier-${showId}`).value;
+
+        try {
+            const res = await fetch("/api/watchlist/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ show_id: showId, status: newStatus, tier: newTier })
+            });
+
+            if (res.ok) {
+            alert("Watchlist updated.");
+            loadWatchlist();
+            } else {
+            const err = await res.json();
+            alert("Failed to update: " + (err.error || "Unknown error"));
+            }
+        } catch (err) {
+            console.error("Update error:", err);
+            alert("Something went wrong.");
+        }
+    }
+
+
+  </script>
+</body>
+</html>
