@@ -51,6 +51,14 @@ passport.serializeUser((user, done) => {
   done(null, user.uid); 
 });
 
+// Route to get current user info
+app.get("/debug-user", (req, res) => {
+  if (!req.user) {
+    return res.json({ user: null });
+  }
+  res.json({ user: { uid: req.user.uid, username: req.user.username } });
+});
+
 passport.deserializeUser(async (id, done) => {
   try {
     const result = await pool.query('SELECT * FROM users WHERE uid = $1', [id]);
@@ -203,6 +211,7 @@ app.get("/api/movie", async (req, res) => {
           WHERE LOWER(title) = LOWER($1)
           LIMIT 1;
       `;
+
       const result = await pool.query(query, [title]);
       // Error trapping incase the metadata is corrupted/someone inserted a movie erroneously
       if (result.rows.length === 0) {
@@ -251,6 +260,93 @@ app.get("/api/ratings", async (req, res) => {
       res.status(500).json({ error: "Database query error" });
   }
 });
+
+// API used for adding ratings
+app.post("/api/ratings", ensureAuthenticated, async (req, res) => {
+  try {
+    const { title, score, review } = req.body;
+
+    // Error checking
+    if (!title || score == null) {
+      return res.status(400).json({ error: "Title and score are required" });
+    }
+
+    // Show ID reqired to persist data into the database
+    const showQuery = `SELECT show_id FROM netflix_titles WHERE LOWER(title) = LOWER($1) LIMIT 1;`;
+    const showResult = await pool.query(showQuery, [title]);
+
+    // Error checking
+    if (showResult.rows.length === 0) {
+      return res.status(404).json({ error: "Movie not found" });
+    }
+
+    const showId = showResult.rows[0].show_id;
+    const uid = req.user.uid;
+
+    // Insert/Update rating
+    const insertQuery = `
+      INSERT INTO ratings (show_id, uid, score, review)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (show_id, uid)
+      DO UPDATE SET score = EXCLUDED.score, review = EXCLUDED.review;
+    `;
+
+    await pool.query(insertQuery, [showId, uid, score, review || null]);
+    res.status(201).json({ message: "Rating submitted" });
+
+  } catch (err) {
+    console.error("Error submitting rating:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Movie analytics API
+app.get("/api/movie/analytics", async (req, res) => {
+  try {
+    const title = req.query.title;
+    if (!title) return res.status(400).json({ error: "Missing movie title" });
+
+    const showIdQuery = `SELECT show_id FROM netflix_titles WHERE LOWER(title) = LOWER($1) LIMIT 1`;
+    const showIdResult = await pool.query(showIdQuery, [title]);
+    if (showIdResult.rows.length === 0) {
+      return res.status(404).json({ error: "Movie not found" });
+    }
+    const showId = showIdResult.rows[0].show_id;
+
+    const analyticsQuery = `
+      SELECT
+        u.username,
+        r.score,
+        r.review,
+        RANK() OVER (ORDER BY r.score DESC) AS rank
+      FROM ratings r
+      JOIN users u ON r.uid = u.uid
+      WHERE r.show_id = $1
+    `;
+    const statsQuery = `
+      SELECT
+        AVG(score)::numeric(4,1) AS average,
+        MIN(score) AS min,
+        MAX(score) AS max
+      FROM ratings
+      WHERE show_id = $1
+    `;
+
+    const [analyticsResult, statsResult] = await Promise.all([
+      pool.query(analyticsQuery, [showId]),
+      pool.query(statsQuery, [showId]),
+    ]);
+
+    res.json({
+      stats: statsResult.rows[0],
+      rankedRatings: analyticsResult.rows,
+    });
+  } catch (err) {
+    console.error("Error fetching movie analytics:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 // Add a new show to the database
 app.post("/api/add-show", async (req, res) => {
