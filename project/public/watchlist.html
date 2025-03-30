@@ -1,4 +1,3 @@
-<!-- watchlist.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,13 +83,13 @@
       </tr>
     </thead>
     <tbody id="watchlistTable">
-      <!-- JS dynamically inserts rows here -->
+      <!-- Table dynamic insertion -->
     </tbody>
   </table>
   <a class="back-link" href="movies.html">Back to Movies</a>
 
   <script>
-    // Called on page load to populate the watchlist
+    // populate page on load
     document.addEventListener("DOMContentLoaded", loadWatchlist);
 
     function capitalize(str) {
@@ -100,10 +99,10 @@
     function formatDate(isoString) {
         if (!isoString) return "-";
         const date = new Date(isoString);
-        return date.toISOString().split("T")[0]; // YYYY-MM-DD
+        return date.toISOString().split("T")[0]; // date formatting
     }
 
-
+    // loading the watch list
     async function loadWatchlist() {
         try {
             const response = await fetch("/api/watchlist", { credentials: "include" });
@@ -132,7 +131,8 @@
                 </select>`;
 
             const btn = `<button onclick="updateWatchlist('${item.show_id}')">Save</button>`;
-
+            
+            // formatting of the data in each row
             row.innerHTML = `
                 <td>${item.title}</td>
                 <td>
@@ -147,8 +147,7 @@
                 <td>${formatDate(item.added_at)}</td>
             `;
 
-
-            table.appendChild(row);
+            table.appendChild(row); // add all the rows
             });
         } catch (error) {
             console.error("Error loading watchlist:", error);
@@ -156,6 +155,7 @@
         }
     }
 
+    // updating current entries, adding new ones
     async function updateWatchlist(showId) {
         const newStatus = document.getElementById(`status-${showId}`).value;
         const newTier = document.getElementById(`tier-${showId}`).value;

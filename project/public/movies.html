@@ -139,7 +139,7 @@
       background-color: darkred;
     }
 
-    /* Modal Styles */
+    /* Modal for adding the movie to the watchlist */
     #watchlistModal {
       display: none;
     }
@@ -211,6 +211,7 @@
   </style>
 </head>
 <body>
+    <!-- Amount of data loaded through pagination-->
   <div class="pagination">
     <button id="prevPage" class="pagination-btn" onclick="changePage(-1, event)" disabled>
       <span class="arrow">←</span> Previous
@@ -257,16 +258,16 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Filled by JS -->
+        <!-- Automatically filled -->
       </tbody>
     </table>
   </div>
 
-  <!-- Modal -->
+  <!-- adding to watchlist -->
   <div id="watchlistModal">
     <div class="modal-overlay">
       <div class="modal-content">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <span class="close-btn" onclick="closeModal()">&times;</span> <!-- Span instead of a button for better visuals -->
         <h2 style="margin-bottom: 20px;">Add to Watchlist</h2>
 
         <label for="statusSelect" style="display: block; text-align: left;">Status:</label>
@@ -298,10 +299,12 @@
 
     document.addEventListener("DOMContentLoaded", () => fetchMovies());
 
+    // Allowing enter to be clicked to search a term instead of having to mouse press it
     function handleKeyPress(event) {
       if (event.key === "Enter") searchMovie();
     }
 
+    // retriving the movies based on pagination and searched value
     async function fetchMovies(page = 1) {
       const query = document.getElementById("searchInput").value.trim();
       const filterType = document.getElementById("filterType").value;
@@ -351,12 +354,12 @@
       fetchMovies(1);
     }
 
+    // Functions for the "add to watchlist" button
     function openModal(showId, title) {
       currentAddShowId = showId;
       currentAddTitle = title;
       document.getElementById("watchlistModal").style.display = "block";
     }
-
     function closeModal() {
       document.getElementById("watchlistModal").style.display = "none";
       currentAddShowId = null;
@@ -399,6 +402,7 @@
       }
     }
 
+    // Pagination display functionality
     function changePage(step) {
       const nextPage = currPage + step;
       if (nextPage < 1 || nextPage > maxPage) return;

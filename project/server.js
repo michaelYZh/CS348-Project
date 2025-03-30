@@ -300,7 +300,7 @@ app.post("/api/ratings", ensureAuthenticated, async (req, res) => {
   }
 });
 
-// Movie analytics API
+// Used for displaying movie analytics on the individual movie page
 app.get("/api/movie/analytics", async (req, res) => {
   try {
     const title = req.query.title;
@@ -347,12 +347,12 @@ app.get("/api/movie/analytics", async (req, res) => {
   }
 });
 
-// Watchlist page
+// Watchlist html page
 app.get("/watchlist", ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "watchlist.html"));
 });
 
-// Add to Watchlist
+// Add a row to the watchlist
 app.post('/api/watchlist', ensureAuthenticated, async (req, res) => {
   try {
     const { show_id, title, status, tier } = req.body;
@@ -384,9 +384,7 @@ app.post('/api/watchlist', ensureAuthenticated, async (req, res) => {
   }
 });
 
-
-
-// Update status and/or tier
+// Update a watchlist entry
 app.post("/api/watchlist/update", ensureAuthenticated, async (req, res) => {
   try {
     const { show_id, status, tier } = req.body;
@@ -425,8 +423,6 @@ app.get("/api/watchlist", ensureAuthenticated, async (req, res) => {
     res.status(500).json({ error: "Internal error fetching watchlist" });
   }
 });
-
-
 
 // Add a new show to the database
 app.post("/api/add-show", async (req, res) => {

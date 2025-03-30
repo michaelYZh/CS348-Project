@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Movie Details</title>
-  <!-- CSS Styling -->
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -301,6 +300,7 @@
         };
         control.appendChild(btn);
 
+        // IMDB API used for movie posters
         const configResponse = await fetch("/api/config");
         const configData = await configResponse.json();
         const omdbApiKey = configData.omdbApiKey;
@@ -346,6 +346,7 @@
       }
     });
 
+    // Modal pop-up for comments
     document.getElementById("closeModal").onclick = () => {
       document.getElementById("ratingModal").style.display = "none";
     };
