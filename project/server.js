@@ -156,7 +156,7 @@ app.get("/api/movies", async (req, res) => {
       // Determine which table to query
       let tableName = "netflix_titles"; // default table
       if (["trending-movies", "trending-tv-shows", "new-releases", "classic-films"].includes(category)) {
-          tableName = category.replace("-", "_"); // Convert to table naming convention
+          tableName = category.replaceAll("-", "_"); // Convert to table naming convention
       }
       
       // Build where clause and params
