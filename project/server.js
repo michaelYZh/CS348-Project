@@ -56,6 +56,14 @@ passport.serializeUser((user, done) => {
   done(null, user.uid); 
 });
 
+// Route to get current user info
+app.get("/debug-user", (req, res) => {
+  if (!req.user) {
+    return res.json({ user: null });
+  }
+  res.json({ user: { uid: req.user.uid, username: req.user.username } });
+});
+
 passport.deserializeUser(async (id, done) => {
   try {
     const result = await pool.query('SELECT * FROM users WHERE uid = $1', [id]);
@@ -245,6 +253,7 @@ app.get("/api/movie", async (req, res) => {
           WHERE LOWER(title) = LOWER($1)
           LIMIT 1;
       `;
+
       const result = await pool.query(query, [title]);
       // Error trapping incase the metadata is corrupted/someone inserted a movie erroneously
       if (result.rows.length === 0) {
@@ -291,6 +300,169 @@ app.get("/api/ratings", async (req, res) => {
   } catch (err) {
       console.error("Error fetching ratings:", err);
       res.status(500).json({ error: "Database query error" });
+  }
+});
+
+// API used for adding ratings
+app.post("/api/ratings", ensureAuthenticated, async (req, res) => {
+  try {
+    const { title, score, review } = req.body;
+
+    // Error checking
+    if (!title || score == null) {
+      return res.status(400).json({ error: "Title and score are required" });
+    }
+
+    // Show ID reqired to persist data into the database
+    const showQuery = `SELECT show_id FROM netflix_titles WHERE LOWER(title) = LOWER($1) LIMIT 1;`;
+    const showResult = await pool.query(showQuery, [title]);
+
+    // Error checking
+    if (showResult.rows.length === 0) {
+      return res.status(404).json({ error: "Movie not found" });
+    }
+
+    const showId = showResult.rows[0].show_id;
+    const uid = req.user.uid;
+
+    // Insert/Update rating
+    const insertQuery = `
+      INSERT INTO ratings (show_id, uid, score, review)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (show_id, uid)
+      DO UPDATE SET score = EXCLUDED.score, review = EXCLUDED.review;
+    `;
+
+    await pool.query(insertQuery, [showId, uid, score, review || null]);
+    res.status(201).json({ message: "Rating submitted" });
+
+  } catch (err) {
+    console.error("Error submitting rating:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Used for displaying movie analytics on the individual movie page
+app.get("/api/movie/analytics", async (req, res) => {
+  try {
+    const title = req.query.title;
+    if (!title) return res.status(400).json({ error: "Missing movie title" });
+
+    const showIdQuery = `SELECT show_id FROM netflix_titles WHERE LOWER(title) = LOWER($1) LIMIT 1`;
+    const showIdResult = await pool.query(showIdQuery, [title]);
+    if (showIdResult.rows.length === 0) {
+      return res.status(404).json({ error: "Movie not found" });
+    }
+    const showId = showIdResult.rows[0].show_id;
+
+    const analyticsQuery = `
+      SELECT
+        u.username,
+        r.score,
+        r.review,
+        RANK() OVER (ORDER BY r.score DESC) AS rank
+      FROM ratings r
+      JOIN users u ON r.uid = u.uid
+      WHERE r.show_id = $1
+    `;
+    const statsQuery = `
+      SELECT
+        AVG(score)::numeric(4,1) AS average,
+        MIN(score) AS min,
+        MAX(score) AS max
+      FROM ratings
+      WHERE show_id = $1
+    `;
+
+    const [analyticsResult, statsResult] = await Promise.all([
+      pool.query(analyticsQuery, [showId]),
+      pool.query(statsQuery, [showId]),
+    ]);
+
+    res.json({
+      stats: statsResult.rows[0],
+      rankedRatings: analyticsResult.rows,
+    });
+  } catch (err) {
+    console.error("Error fetching movie analytics:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Watchlist html page
+app.get("/watchlist", ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "watchlist.html"));
+});
+
+// Add a row to the watchlist
+app.post('/api/watchlist', ensureAuthenticated, async (req, res) => {
+  try {
+    const { show_id, title, status, tier } = req.body;
+    const uid = req.user.uid;
+
+    if (!show_id || !title || !status) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Check if already exists
+    const exists = await pool.query(
+      `SELECT 1 FROM watch_list WHERE show_id = $1 AND uid = $2`,
+      [show_id, uid]
+    );
+    if (exists.rows.length > 0) {
+      return res.status(409).json({ error: "Already in watchlist" });
+    }
+
+    await pool.query(
+      `INSERT INTO watch_list (show_id, uid, status, added_at, tier)
+       VALUES ($1, $2, $3, CURRENT_DATE, $4)`,
+      [show_id, uid, status.toLowerCase(), tier ? tier.toLowerCase() : null]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error adding to watchlist:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update a watchlist entry
+app.post("/api/watchlist/update", ensureAuthenticated, async (req, res) => {
+  try {
+    const { show_id, status, tier } = req.body;
+    const uid = req.user.uid;
+
+    if (!show_id) return res.status(400).json({ error: "Missing show_id" });
+
+    await pool.query(`
+      UPDATE watch_list
+      SET status = $1, tier = $2
+      WHERE show_id = $3 AND uid = $4
+    `, [status.toLowerCase(), tier ? tier.toLowerCase() : null, show_id, uid]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error updating watchlist:", err);
+    res.status(500).json({ error: "Failed to update watchlist" });
+  }
+});
+
+// Get user's watchlist
+app.get("/api/watchlist", ensureAuthenticated, async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const query = `
+      SELECT w.show_id, w.status, w.tier, w.added_at, nt.title
+      FROM watch_list w
+      JOIN netflix_titles nt ON w.show_id = nt.show_id
+      WHERE w.uid = $1
+      ORDER BY w.added_at DESC;
+    `;
+    const result = await pool.query(query, [uid]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching watchlist:", err);
+    res.status(500).json({ error: "Internal error fetching watchlist" });
   }
 });
 
