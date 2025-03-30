@@ -557,6 +557,23 @@ app.post("/api/add-show", async (req, res) => {
     res.status(500).json({ error: "Database error while adding new show" });
   }
 });
+app.get("/recently-added", ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "recently-added.html"));
+});
+app.get("/api/recently-added", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT show_id, title, release_year, show_type, duration, description
+      FROM netflix_titles
+      ORDER BY show_id DESC
+      LIMIT 50`);
+    res.send(result.rows)
+  }
+  catch (e) {
+    console.error("Error getting recently added shows:", e);
+    res.status.send(500).json({error: "Error getting recently added shows"})
+  }
+})
 
 async function refreshMaterializedViews() {
   try {
