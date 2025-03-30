@@ -1,4 +1,2 @@
-uid,username,password
-1,admin@gmail.com,password
-2,user_a@gmail.com,password_a
-3,user_b@gmail.com,password_b
+username,password
+admin@gmail.com,$2b$10$YAAqZQOMVnEZmT9/2EJVgOKC98Day.jDS/V9PSA09PNq4/sodGwRO

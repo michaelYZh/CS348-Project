@@ -483,7 +483,6 @@ app.get("/api/watchlist", ensureAuthenticated, async (req, res) => {
 app.post("/api/add-show", async (req, res) => {
   try {
     const {
-      showId,
       showType,
       title,
       director,
@@ -498,16 +497,8 @@ app.post("/api/add-show", async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!showId || !showType || !title || !releaseYear) {
-      return res.status(400).json({ error: "Missing required fields: showId, showType, title, and releaseYear are required" });
-    }
-
-    // Check if show_id already exists
-    const checkQuery = `SELECT COUNT(*) FROM netflix_titles WHERE show_id = $1`;
-    const checkResult = await pool.query(checkQuery, [showId]);
-    
-    if (parseInt(checkResult.rows[0].count) > 0) {
-      return res.status(409).json({ error: "A show with this ID already exists" });
+    if (!showType || !title || !releaseYear) {
+      return res.status(400).json({ error: "Missing required fields: showType, title, and releaseYear are required" });
     }
 
     // Format date for SQL
@@ -519,14 +510,13 @@ app.post("/api/add-show", async (req, res) => {
     // Insert the new show using SQL query
     const insertQuery = `
       INSERT INTO netflix_titles (
-        show_id, show_type, title, director, show_cast, country, date_added, 
+        show_type, title, director, show_cast, country, date_added, 
         release_year, rating, duration, listed_in, description
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *;
     `;
     
     const values = [
-      showId,
       showType,
       title,
       director || null,
