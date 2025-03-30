@@ -513,7 +513,7 @@ app.post("/api/add-show", async (req, res) => {
     }
     
     // Possibly refresh other views as needed
-    if (releaseYear >= new Date().getFullYear() - 2) {
+    if (releaseYear >= new Date().getFullYear() - 4) {
       await pool.query('REFRESH MATERIALIZED VIEW new_releases');
     }
     if (releaseYear < 2000) {
@@ -530,9 +530,11 @@ app.post("/api/add-show", async (req, res) => {
     res.status(500).json({ error: "Database error while adding new show" });
   }
 });
+
 app.get("/recently-added", ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "recently-added.html"));
 });
+
 app.get("/api/recently-added", async (req, res) => {
   try {
     const result = await pool.query(`
