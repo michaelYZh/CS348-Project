@@ -267,6 +267,19 @@ app.get("/api/movie", async (req, res) => {
   }
 });
 
+// Endpoint to view audit logs
+app.get("/api/audit", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, operation, table_name, show_id, uid, change_timestamp, details FROM audit_log ORDER BY change_timestamp DESC"
+    );
+    res.status(200).json({ auditLogs: result.rows });
+  } catch (err) {
+    console.error("Error fetching audit logs:", err);
+    res.status(500).json({ error: "Database query error while fetching audit logs." });
+  }
+});
+
 // Ratings for a movie
 app.get("/api/ratings", async (req, res) => {
   try {

@@ -53,3 +53,36 @@ CREATE TABLE watch_list (
 
 CREATE INDEX lowercase_title ON netflix_titles (LOWER(title));
 
+-- audit table --
+DROP TABLE IF EXISTS audit_log CASCADE;
+CREATE TABLE audit_log (
+    id SERIAL PRIMARY KEY,
+    operation VARCHAR(10) NOT NULL,
+    table_name VARCHAR(50) NOT NULL,
+    show_id VARCHAR(10),
+    uid INTEGER,
+    change_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    details TEXT
+);
+
+CREATE OR REPLACE FUNCTION log_new_rating() RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO audit_log (operation, table_name, show_id, uid, details)
+    VALUES (
+        'INSERT',
+        'ratings',
+        NEW.show_id,
+        NEW.uid,
+        'Score: ' || NEW.score || ', Review: ' || COALESCE(NEW.review, 'N/A')
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS after_rating_insert ON ratings;
+CREATE TRIGGER after_rating_insert
+AFTER INSERT ON ratings
+FOR EACH ROW
+EXECUTE PROCEDURE log_new_rating();
+
+-- audit table complete --
