@@ -34,6 +34,12 @@ This method uses the Python script in the `project/data_loader` directory to cre
    python data_loader_script.py
    ```
 
+4. **Create materialized views for trending categories**
+   ```sh
+   psql -U postgres -d netflix_reviews -f views.sql
+   ```
+   This creates optimized materialized views for frequently accessed data like trending movies and classic films.
+
 #### Option 2: Manual Setup
 If you prefer to set up the database manually:
 

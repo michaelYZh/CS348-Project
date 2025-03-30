@@ -180,6 +180,32 @@
             
             <button onclick="applyFilters()">Apply</button>
         </div>
+        <div style="margin: 20px 0; text-align: center;">
+            <a href="/movies?category=trending-movies" 
+               style="margin: 5px; padding: 8px 16px; background-color: #e50914; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block;">
+               Trending Movies
+            </a>
+            
+            <a href="/movies?category=trending-tv-shows" 
+               style="margin: 5px; padding: 8px 16px; background-color: #e50914; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block;">
+               Trending TV Shows
+            </a>
+            
+            <a href="/movies?category=new-releases" 
+               style="margin: 5px; padding: 8px 16px; background-color: #e50914; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block;">
+               New Releases
+            </a>
+            
+            <a href="/movies?category=classic-films" 
+               style="margin: 5px; padding: 8px 16px; background-color: #e50914; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block;">
+               Classic Films
+            </a>
+            
+            <a href="/movies" 
+               style="margin: 5px; padding: 8px 16px; background-color: #333; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block;">
+               Show All Movies
+            </a>
+        </div>
         <table id="moviesTable">
             <thead>
                 <tr>
@@ -209,15 +235,26 @@
         /* Variables for dynamic page loading */
         let currPage = 1
         let maxPage = 1
+        let isLoading = false;
+
         document.addEventListener("DOMContentLoaded", function () {
-            fetchMovies();
+            console.log('Page loaded - initializing movies');
+            // Get current URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const category = urlParams.get('category') || '';
+            
+            // Highlight the active button
+            highlightActiveButton(category);
+            
+            // Load movies immediately
+            loadMoviesWithCategory(category);
         });
 
         /* Page changing update the results */
         function changePage(step) {
             const newPage = currPage + step;
             if (newPage < 1) return; // no negative page numbers
-            fetchMovies(newPage);
+            loadMoviesWithCategory(category, newPage);
         }
 
         /* Allowing to press enter or mouse click for results */
@@ -291,7 +328,7 @@
         }
 
         function applyFilters() {
-            fetchMovies(1); // load page 1 with new filters
+            loadMoviesWithCategory(category, 1); // load page 1 with new filters
         }
 
         /* This is used to get the filtered results */
@@ -329,6 +366,196 @@
             } catch (error) {
                 console.error("Error fetching search results:", error);
                 alert("Error loading search results. Please check the console.");
+            }
+        }
+
+        // Use a self-executing function to isolate variables
+        (function() {
+            // Flag to ensure loadMovies only executes once per page load
+            let hasLoadedMovies = false;
+            
+            // Replace your existing loadMovies function with this one
+            window.loadMovies = function() {
+                // Check if we've already loaded movies once
+                if (hasLoadedMovies) {
+                    console.log("PREVENTED duplicate movie load");
+                    return;
+                }
+                
+                console.log("LOADING MOVIES - first call");
+                hasLoadedMovies = true;
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const page = urlParams.get('page') || 1;
+                const category = urlParams.get('category') || '';
+                
+                // Get the table body element
+                const tableBody = document.querySelector('#moviesTable tbody');
+                if (!tableBody) {
+                    console.error("Table body element not found!");
+                    return;
+                }
+                
+                // Show loading message
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center">Loading...</td></tr>';
+                
+                // Make the API call
+                fetch(`/api/movies?page=${page}&search=&filter=&category=${category}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(`Received ${data.movies?.length || 0} movies`);
+                        
+                        // Clear table body
+                        tableBody.innerHTML = '';
+                        
+                        if (!data.movies || data.movies.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center">No movies found</td></tr>';
+                            return;
+                        }
+                        
+                        // Create and append table rows
+                        data.movies.forEach(movie => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${movie.title || 'Unknown'}</td>
+                                <td>${movie.release_year || 'Unknown'}</td>
+                                <td>${movie.show_type || 'Unknown'}</td>
+                                <td>${movie.duration || 'Unknown'}</td>
+                                <td>${movie.description || 'No description'}</td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                        
+                        // Reset the flag after a delay (to allow for pagination)
+                        setTimeout(() => {
+                            hasLoadedMovies = false;
+                        }, 500);
+                    })
+                    .catch(error => {
+                        console.error("Error loading movies:", error);
+                        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red">Error: ${error.message}</td></tr>`;
+                        hasLoadedMovies = false;
+                    });
+            };
+            
+            // Set up a single event listener for page load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadMovies, { once: true });
+            } else {
+                loadMovies();
+            }
+        })();
+
+        function highlightActiveButton(category) {
+            document.querySelectorAll('a.category-btn').forEach(btn => {
+                const btnUrl = new URL(btn.href);
+                const btnCategory = btnUrl.searchParams.get('category') || '';
+                
+                if (btnCategory === category) {
+                    btn.style.backgroundColor = '#b2070e'; // darker red for active
+                } else if (!category && !btnCategory) {
+                    btn.style.backgroundColor = '#b2070e'; // darker red for "Show All" when no category
+                } else {
+                    btn.style.backgroundColor = '#e50914'; // normal red for inactive
+                }
+            });
+        }
+
+        function loadMoviesWithCategory(category, page = 1) {
+            console.log('loadMovies called from:', new Error().stack);
+            console.log(`Loading movies with category: ${category}, page: ${page}`);
+            
+            // Show loading message
+            const movieList = document.getElementById('movie-list');
+            if (movieList) {
+                movieList.innerHTML = '<p style="text-align:center">Loading...</p>';
+            }
+            
+            // Clear search and filter inputs if category is selected
+            if (category && document.getElementById('searchInput')) {
+                document.getElementById('searchInput').value = '';
+            }
+            if (category && document.getElementById('filterSelect')) {
+                document.getElementById('filterSelect').value = '';
+            }
+            
+            // Make API request
+            fetch(`/api/movies?page=${page}&search=&filter=&category=${category}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(`Received ${data.movies ? data.movies.length : 0} movies from API`);
+                    displayMovies(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    if (movieList) {
+                        movieList.innerHTML = `<p style="text-align:center; color:red">Error: ${error.message}</p>`;
+                    }
+                });
+        }
+
+        function displayMovies(data) {
+            const movieList = document.getElementById('movie-list');
+            if (!movieList) return;
+            
+            movieList.innerHTML = '';
+            
+            if (!data.movies || data.movies.length === 0) {
+                movieList.innerHTML = '<p style="text-align:center">No movies found</p>';
+                return;
+            }
+            
+            data.movies.forEach(movie => {
+                const movieCard = document.createElement('div');
+                movieCard.className = 'movie-card';
+                movieCard.innerHTML = `
+                    <h3>${movie.title || 'Unknown'}</h3>
+                    <p>Type: ${movie.show_type || 'Unknown'}</p>
+                    <p>Year: ${movie.release_year || 'Unknown'}</p>
+                    <p>Duration: ${movie.duration || 'Unknown'}</p>
+                    <p>Description: ${movie.description || 'No description'}</p>
+                `;
+                movieList.appendChild(movieCard);
+            });
+            
+            // Update pagination
+            updatePagination(data.currentPage, data.maxPage);
+        }
+
+        function updatePagination(currentPage, maxPage) {
+            const pagination = document.getElementById('pagination');
+            if (!pagination) return;
+            
+            // Get the current URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const category = urlParams.get('category') || '';
+            
+            pagination.innerHTML = '';
+            
+            // Previous button
+            if (currentPage > 1) {
+                const prevButton = document.createElement('button');
+                prevButton.textContent = 'Previous';
+                prevButton.addEventListener('click', () => {
+                    loadMoviesWithCategory(category, currentPage - 1);
+                });
+                pagination.appendChild(prevButton);
+            }
+            
+            // Page indicator
+            const pageIndicator = document.createElement('span');
+            pageIndicator.textContent = `Page ${currentPage} of ${maxPage}`;
+            pageIndicator.style.margin = '0 10px';
+            pagination.appendChild(pageIndicator);
+            
+            // Next button
+            if (currentPage < maxPage) {
+                const nextButton = document.createElement('button');
+                nextButton.textContent = 'Next';
+                nextButton.addEventListener('click', () => {
+                    loadMoviesWithCategory(category, currentPage + 1);
+                });
+                pagination.appendChild(nextButton);
             }
         }
     </script>
