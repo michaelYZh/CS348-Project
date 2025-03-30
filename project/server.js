@@ -172,7 +172,7 @@ app.get("/api/movies", async (req, res) => {
 
       // Build the main query with filtering and sorting
       let query = `
-          SELECT title, release_year, show_type, duration, description
+          SELECT show_id, title, release_year, show_type, duration, description
           FROM netflix_titles
           WHERE LOWER(title) LIKE LOWER($1)
       `;
@@ -346,6 +346,86 @@ app.get("/api/movie/analytics", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// Watchlist page
+app.get("/watchlist", ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "watchlist.html"));
+});
+
+// Add to Watchlist
+app.post('/api/watchlist', ensureAuthenticated, async (req, res) => {
+  try {
+    const { show_id, title, status, tier } = req.body;
+    const uid = req.user.uid;
+
+    if (!show_id || !title || !status) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Check if already exists
+    const exists = await pool.query(
+      `SELECT 1 FROM watch_list WHERE show_id = $1 AND uid = $2`,
+      [show_id, uid]
+    );
+    if (exists.rows.length > 0) {
+      return res.status(409).json({ error: "Already in watchlist" });
+    }
+
+    await pool.query(
+      `INSERT INTO watch_list (show_id, uid, status, added_at, tier)
+       VALUES ($1, $2, $3, CURRENT_DATE, $4)`,
+      [show_id, uid, status.toLowerCase(), tier ? tier.toLowerCase() : null]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error adding to watchlist:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+
+// Update status and/or tier
+app.post("/api/watchlist/update", ensureAuthenticated, async (req, res) => {
+  try {
+    const { show_id, status, tier } = req.body;
+    const uid = req.user.uid;
+
+    if (!show_id) return res.status(400).json({ error: "Missing show_id" });
+
+    await pool.query(`
+      UPDATE watch_list
+      SET status = $1, tier = $2
+      WHERE show_id = $3 AND uid = $4
+    `, [status.toLowerCase(), tier ? tier.toLowerCase() : null, show_id, uid]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error updating watchlist:", err);
+    res.status(500).json({ error: "Failed to update watchlist" });
+  }
+});
+
+// Get user's watchlist
+app.get("/api/watchlist", ensureAuthenticated, async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const query = `
+      SELECT w.show_id, w.status, w.tier, w.added_at, nt.title
+      FROM watch_list w
+      JOIN netflix_titles nt ON w.show_id = nt.show_id
+      WHERE w.uid = $1
+      ORDER BY w.added_at DESC;
+    `;
+    const result = await pool.query(query, [uid]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching watchlist:", err);
+    res.status(500).json({ error: "Internal error fetching watchlist" });
+  }
+});
+
 
 
 // Add a new show to the database

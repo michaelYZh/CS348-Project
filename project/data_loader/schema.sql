@@ -1,8 +1,6 @@
 DROP TABLE IF EXISTS Ratings CASCADE;
-DROP TABLE IF EXISTS Show_Tiers CASCADE;
 DROP TABLE IF EXISTS Watch_List CASCADE;
 DROP TABLE IF EXISTS Reviews CASCADE;
-DROP TABLE IF EXISTS User_Information CASCADE;
 DROP TABLE IF EXISTS Users CASCADE;
 DROP TABLE IF EXISTS netflix_titles CASCADE;
 
@@ -30,13 +28,6 @@ CREATE TABLE users (
     PRIMARY KEY (uid)
 );
 
-CREATE TABLE user_information (
-    uid INTEGER NOT NULL,
-    first_name VARCHAR(50),
-    last_name VARCHAR(50),
-    FOREIGN KEY (uid) REFERENCES Users(uid)
-);
-
 CREATE TABLE ratings (
     show_id VARCHAR(10) NOT NULL,
     uid INTEGER NOT NULL,
@@ -47,27 +38,17 @@ CREATE TABLE ratings (
     FOREIGN KEY (uid) REFERENCES Users(uid)
 );
 
-CREATE TABLE show_tiers (
-    show_id VARCHAR(10) NOT NULL,
-    uid INTEGER NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    tier VARCHAR(1) NOT NULL,
-    PRIMARY KEY (show_id, uid),
-    FOREIGN KEY (show_id) REFERENCES netflix_titles(show_id),
-    FOREIGN KEY (uid) REFERENCES Users(uid),
-    CHECK (LOWER(tier) IN ('s', 'a', 'b', 'c', 'd'))
-);
-
 CREATE TABLE watch_list (
     show_id VARCHAR(10) NOT NULL,
     uid INTEGER NOT NULL,
     status VARCHAR(255) NOT NULL,
-    title VARCHAR(255) NOT NULL,
     added_at DATE,
+    tier VARCHAR(1),
     PRIMARY KEY (show_id, uid),
     FOREIGN KEY (show_id) REFERENCES netflix_titles(show_id),
     FOREIGN KEY (uid) REFERENCES Users(uid),
-    CHECK (LOWER(status) IN ('planning', 'watching', 'finished'))
+    CHECK (LOWER(status) IN ('planning', 'watching', 'finished')),
+    CHECK (LOWER(tier) IN ('s', 'a', 'b', 'c', 'd'))
 );
 
 CREATE INDEX lowercase_title ON netflix_titles (LOWER(title));
