@@ -133,9 +133,10 @@ app.get("/register", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "register.html"));
 });
 
-app.get("/movies", ensureAuthenticated, (req, res) => {
-  const category = req.query.category || '';
-  res.sendFile(path.join(__dirname, 'public', 'movies.html'));
+app.get("/movies", (req, res) => {
+    // Pass the category parameter to the movies page
+    const category = req.query.category || '';
+    res.sendFile(path.join(__dirname, 'public', 'movies.html'));
 });
 
 app.get("/add-show", (req, res) => {
@@ -145,97 +146,89 @@ app.get("/add-show", (req, res) => {
 // used for searching and displaying all moveis, 2-in-1 function
 app.get("/api/movies", async (req, res) => {
   try {
-      const searchQuery = req.query.search || "";
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 100;  // Parse limit as integer
-      const offset = (page - 1) * limit;
-      const category = req.query.category || "";
-      const filterType = req.query.filter || "";
-      
-      // Sort parameters (with safety checks)
-      let sortField = req.query.sortField || "title";
-      if (!["title", "release_year"].includes(sortField)) sortField = "title";
-      
-      let sortOrder = req.query.sortOrder || "ASC";
-      sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
-      
-      // Determine which table to query
-      let tableName = "netflix_titles"; // default table
-      if (["trending-movies", "trending-tv-shows", "new-releases", "classic-films"].includes(category)) {
-          tableName = category.replaceAll("-", "_"); // Convert to table naming convention
-      }
-      
-      // Build where clause and params
-      const whereConditions = [];
-      const queryParams = [];
-      
-      if (searchQuery) {
-          // Use a combination of exact match and fuzzy search with a lower threshold
-          whereConditions.push(`(
-              LOWER(title) LIKE LOWER('%' || $1 || '%')
-              OR similarity(title, $1) > 0.1  -- Lower threshold to catch more matches
-          )`);
-          queryParams.push(searchQuery);
-          
-          // Override the sort field and order when searching
-          sortField = "similarity";
-          sortOrder = "DESC";
-      }
-      
-      if (filterType && tableName === "netflix_titles") {
-          whereConditions.push(`show_type = $${queryParams.length + 1}`);
-          queryParams.push(filterType);
-      }
-      
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
-      
-      // Add limit/offset params
-      const limitParam = queryParams.length + 1;
-      const offsetParam = queryParams.length + 2;
-      queryParams.push(limit, offset);
-      
-      // Build and execute queries
-      const countQuery = `SELECT COUNT(*) AS total FROM ${tableName} ${whereClause}`;
-      const query = `
-          WITH search_results AS (
-              SELECT *,
-                  CASE 
-                      WHEN $1 != '' THEN
-                          CASE
-                              WHEN LOWER(title) = LOWER($1) THEN 1.0  -- Exact match gets highest score
-                              WHEN LOWER(title) LIKE LOWER('%' || $1 || '%') AND 
-                                   LOWER(title) ~ LOWER($1) THEN 0.9  -- Contains exact words in order
-                              WHEN LOWER(title) LIKE LOWER('%' || $1 || '%') THEN 0.8  -- Contains search term
-                              ELSE similarity(title, $1)  -- Fall back to fuzzy match
-                          END
-                      ELSE 1
-                  END as similarity
-              FROM ${tableName}
-              ${whereClause}
-          )
-          SELECT * FROM search_results
-          ORDER BY 
-              CASE 
-                  WHEN $1 != '' THEN similarity
-                  ELSE 0
-              END DESC,
-              ${sortField} ${sortOrder}
-          LIMIT CAST($${limitParam} AS INTEGER) OFFSET CAST($${offsetParam} AS INTEGER)
-      `;
-      
-      const countResult = await pool.query(countQuery, queryParams.slice(0, -2));
-      const result = await pool.query(query, queryParams);
-      
-      res.json({
-          movies: result.rows,
-          currentPage: page,
-          maxPage: Math.ceil(parseInt(countResult.rows[0].total) / limit)
-      });
+    const searchQuery = req.query.search || "";
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = (page - 1) * limit;
+    const category = req.query.category || "";
+    const filterType = req.query.filter || "";
+
+    // Determine sorting
+    let sortField = req.query.sortField || "title";
+    if (!["title", "release_year"].includes(sortField)) sortField = "title";
+
+    let sortOrder = req.query.sortOrder || "ASC";
+    sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
+
+    // Determine table
+    let tableName = "netflix_titles";
+    if (["trending-movies", "trending-tv-shows", "new-releases", "classic-films"].includes(category)) {
+      tableName = category.replaceAll("-", "_");
+    }
+
+    const whereConditions = [];
+    const queryParams = [];
+
+    if (searchQuery) {
+      whereConditions.push(`(
+        LOWER(title) LIKE LOWER('%' || $1 || '%')
+        OR similarity(title, $1) > 0.1
+      )`);
+      queryParams.push(searchQuery);
+    }
+
+    if (filterType && tableName === "netflix_titles") {
+      whereConditions.push(`show_type = $${queryParams.length + 1}`);
+      queryParams.push(filterType);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+
+    const limitParam = queryParams.length + 1;
+    const offsetParam = queryParams.length + 2;
+    queryParams.push(limit, offset);
+
+    // Sorting logic (use similarity DESC only if there's a search)
+    const sortClause = searchQuery
+      ? `similarity DESC, ${sortField} ${sortOrder}`
+      : `${sortField} ${sortOrder}`;
+
+    const countQuery = `SELECT COUNT(*) AS total FROM ${tableName} ${whereClause}`;
+    const query = `
+      WITH search_results AS (
+        SELECT *,
+          CASE 
+            WHEN $1 != '' THEN
+              CASE
+                WHEN LOWER(title) = LOWER($1) THEN 1.0
+                WHEN LOWER(title) LIKE LOWER('%' || $1 || '%') AND LOWER(title) ~ LOWER($1) THEN 0.9
+                WHEN LOWER(title) LIKE LOWER('%' || $1 || '%') THEN 0.8
+                ELSE similarity(title, $1)
+              END
+            ELSE 1
+          END as similarity
+        FROM ${tableName}
+        ${whereClause}
+      )
+      SELECT * FROM search_results
+      ORDER BY ${sortClause}
+      LIMIT CAST($${limitParam} AS INTEGER) OFFSET CAST($${offsetParam} AS INTEGER)
+    `;
+
+    const countResult = await pool.query(countQuery, queryParams.slice(0, -2));
+    const result = await pool.query(query, queryParams);
+
+    res.json({
+      movies: result.rows,
+      currentPage: page,
+      maxPage: Math.ceil(parseInt(countResult.rows[0].total) / limit)
+    });
   } catch (err) {
-      console.error("Error:", err);
-      res.status(500).json({ error: "Database query error", details: err.message });
+    console.error("Error:", err);
+    res.status(500).json({ error: "Database query error", details: err.message });
   }
 });
+
 
 // For a single movie
 app.get("/api/movie", async (req, res) => {
