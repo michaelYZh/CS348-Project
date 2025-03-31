@@ -95,4 +95,26 @@ AFTER INSERT ON ratings
 FOR EACH ROW
 EXECUTE PROCEDURE log_new_rating();
 
+CREATE OR REPLACE FUNCTION log_rating_update() RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO audit_log (operation, table_name, show_id, uid, details)
+    VALUES (
+        'UPDATE',
+        'ratings',
+        NEW.show_id::varchar,
+        NEW.uid,
+        'Old Score: ' || OLD.score || ', New Score: ' || NEW.score ||
+        ', Old Review: ' || COALESCE(OLD.review, 'N/A') ||
+        ', New Review: ' || COALESCE(NEW.review, 'N/A')
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS after_rating_update ON ratings;
+CREATE TRIGGER after_rating_update
+AFTER UPDATE ON ratings
+FOR EACH ROW
+EXECUTE PROCEDURE log_rating_update();
+
 -- audit table complete --
