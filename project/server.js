@@ -133,7 +133,7 @@ app.get("/register", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "register.html"));
 });
 
-app.get("/movies", (req, res) => {
+app.get("/movies", ensureAuthenticated, (req, res) => {
     // Pass the category parameter to the movies page
     const category = req.query.category || '';
     res.sendFile(path.join(__dirname, 'public', 'movies.html'));
