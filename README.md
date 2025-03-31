@@ -1,5 +1,3 @@
-# CS348-Project
-
 # Netflix Review App
 
 ## How to Set Up and Run the Project
@@ -12,8 +10,7 @@ npm install express-session passport passport-local bcrypt
 
 ### 2. Set up PostgreSQL Database
 
-#### Option 1: Using the Python Script (Recommended)
-This method uses the Python script in the `project/data_loader` directory to create the database tables and load the data.
+This method uses the Python script in the `project/data_loader` directory to create database tables, load data, and create materialized views in a single step.
 
 1. **Install Python and required packages**
    ```sh
@@ -27,53 +24,16 @@ This method uses the Python script in the `project/data_loader` directory to cre
    \q
    ```
 
-3. **Create tables and load data**
+3. **Run the setup script**
    Navigate to the `project/data_loader` directory and run:
    ```sh
-   psql -U postgres -d netflix_reviews -f schema.sql
    python data_loader_script.py
    ```
-
-4. **Create materialized views for trending categories**
-   ```sh
-   psql -U postgres -d netflix_reviews -f views.sql
-   ```
-   This creates optimized materialized views for frequently accessed data like trending movies and classic films.
-
-#### Option 2: Manual Setup
-If you prefer to set up the database manually:
-
-```sh
-psql -U postgres
-CREATE DATABASE netflix_reviews;
-\c netflix_reviews
-
-CREATE TABLE netflix_titles (
-    show_id VARCHAR(10),
-    show_type VARCHAR(20) NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    director VARCHAR(255),
-    show_cast TEXT,
-    country VARCHAR(100),
-    date_added DATE,
-    release_year INT,
-    rating VARCHAR(20),
-    duration VARCHAR(20),
-    listed_in TEXT,
-    description TEXT,
-    PRIMARY KEY (show_id, release_year, title),
-    UNIQUE(show_id)
-);
-
-CREATE TABLE users (
-    uid SERIAL,
-    username VARCHAR(100) NOT NULL,
-    password VARCHAR(100) NOT NULL,
-    PRIMARY KEY (uid)
-);
-
-# Add other tables as needed from schema.sql
-```
+   
+   This single command will:
+   - Create all necessary database tables defined in `schema.sql`
+   - Load data from CSV files
+   - Create optimized materialized views for trending categories defined in `views.sql`
 
 ### 3. Create an OMDB account and fetch a key
 Visit `https://www.omdbapi.com/apikey.aspx` and create an account using your email, with the free account type. You will get an email with your API key.
@@ -97,6 +57,41 @@ node server.js
 Open your browser and navigate to:
 ```
 http://localhost:3000
+```
+
+## Database Structure
+
+### Tables
+The application uses the following tables:
+- `netflix_titles`: Stores Netflix shows and movies
+- `users`: Stores user account information
+- `ratings`: Stores user ratings and reviews
+- `show_tiers`: Stores user-defined tier rankings for shows
+- `watch_list`: Stores user watch lists with status information
+- `audit_log`: Tracks changes to ratings for auditing purposes
+
+### Materialized Views
+The application uses these optimized materialized views (created in `views.sql`) to improve performance for frequently accessed data:
+- `trending_movies`: Recently added movies, sorted by date added and release year
+- `trending_tv_shows`: Recently added TV shows, sorted by date added and release year
+- `new_releases`: Content from the last 2 years, sorted by release year
+- `classic_films`: Movies released before 2000, sorted by release year
+
+Each view is limited to 100 entries for better performance and faster query response times.
+
+### Refreshing Materialized Views
+Connect to the database and run the refresh commands:
+
+```
+psql -U <username> -d netflix_reviews
+```
+
+Then execute:
+```sql
+REFRESH MATERIALIZED VIEW trending_movies;
+REFRESH MATERIALIZED VIEW trending_tv_shows;
+REFRESH MATERIALIZED VIEW new_releases;
+REFRESH MATERIALIZED VIEW classic_films;
 ```
 
 ## Features
