@@ -145,97 +145,70 @@ app.get("/add-show", (req, res) => {
 
 // used for searching and displaying all moveis, 2-in-1 function
 app.get("/api/movies", async (req, res) => {
-    try {
-        const searchQuery = req.query.search || "";
-        const page = parseInt(req.query.page) || 1;
-        const limit = 100;
-        const offset = (page - 1) * limit;
-        const category = req.query.category || "";
-        
-        console.log("API request with category:", category);
-
-        let query, countQuery, queryParams;
-
-        if (category === "trending-movies") {
-            query = "SELECT * FROM trending_movies LIMIT $1 OFFSET $2";
-            countQuery = "SELECT COUNT(*) FROM trending_movies";
-            queryParams = [limit, offset];
-        } 
-        else if (category === "trending-tv-shows") {
-            query = "SELECT * FROM trending_tv_shows LIMIT $1 OFFSET $2";
-            countQuery = "SELECT COUNT(*) FROM trending_tv_shows";
-            queryParams = [limit, offset];
-        }
-        else if (category === "new-releases") {
-            query = "SELECT * FROM new_releases LIMIT $1 OFFSET $2";
-            countQuery = "SELECT COUNT(*) FROM new_releases";
-            queryParams = [limit, offset];
-        }
-        else if (category === "classic-films") {
-            query = "SELECT * FROM classic_films LIMIT $1 OFFSET $2";
-            countQuery = "SELECT COUNT(*) FROM classic_films";
-            queryParams = [limit, offset];
-        }
-        else {
-            // Regular search
-            queryParams = [];
-            let whereClause = "";
-            
-            if (searchQuery) {
-                whereClause = "WHERE LOWER(title) LIKE LOWER($1)";
-                queryParams.push(`%${searchQuery}%`);
-            }
-            
-            if (req.query.filter) {
-                if (whereClause) {
-                    whereClause += ` AND show_type = $${queryParams.length + 1}`;
-                } else {
-                    whereClause = `WHERE show_type = $1`;
-                }
-                queryParams.push(req.query.filter);
-            }
-            
-            countQuery = `SELECT COUNT(*) FROM netflix_titles ${whereClause}`;
-            
-            let sortField = req.query.sortField || "title";
-            let sortOrder = req.query.sortOrder || "ASC";
-            if (!["title", "release_year"].includes(sortField)) {
-                sortField = "title";
-            }
-            sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
-            
-            query = `
-                SELECT title, release_year, show_type, duration, description
-                FROM netflix_titles
-                ${whereClause}
-                ORDER BY ${sortField} ${sortOrder}
-                LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
-            `;
-            
-            queryParams.push(limit, offset);
-        }
-
-        console.log("Query:", query);
-        console.log("Params:", queryParams);
-
-        // Execute queries
-        const countResult = await pool.query(countQuery, category ? [] : queryParams.slice(0, -2));
-        const result = await pool.query(query, queryParams);
-        
-        const totalMovies = parseInt(countResult.rows[0].count);
-        const maxPage = Math.ceil(totalMovies / limit);
-
-        res.json({ 
-            movies: result.rows, 
-            currentPage: page, 
-            maxPage: maxPage
-        });
-    } catch (err) {
-        console.error("Error:", err);
-        res.status(500).json({ error: "Database query error", details: err.message });
-    }
+  try {
+      const searchQuery = req.query.search || "";
+      const page = parseInt(req.query.page) || 1;
+      const limit = 100;
+      const offset = (page - 1) * limit;
+      const category = req.query.category || "";
+      const filterType = req.query.filter || "";
+      
+      // Determine which table to query
+      let tableName = "netflix_titles"; // default table
+      if (["trending-movies", "trending-tv-shows", "new-releases", "classic-films"].includes(category)) {
+          tableName = category.replaceAll("-", "_"); // Convert to table naming convention
+      }
+      
+      // Build where clause and params
+      const whereConditions = [];
+      const queryParams = [];
+      
+      if (searchQuery) {
+          whereConditions.push("LOWER(title) LIKE LOWER($1)");
+          queryParams.push(`%${searchQuery}%`);
+      }
+      
+      if (filterType && tableName === "netflix_titles") {
+          whereConditions.push(`show_type = $${queryParams.length + 1}`);
+          queryParams.push(filterType);
+      }
+      
+      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+      
+      // Sort parameters (with safety checks)
+      let sortField = req.query.sortField || "title";
+      if (!["title", "release_year"].includes(sortField)) sortField = "title";
+      
+      let sortOrder = req.query.sortOrder || "ASC";
+      sortOrder = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
+      
+      // Add limit/offset params
+      const limitParam = queryParams.length + 1;
+      const offsetParam = queryParams.length + 2;
+      queryParams.push(limit, offset);
+      
+      // Build and execute queries
+      const countQuery = `SELECT COUNT(*) AS total FROM ${tableName} ${whereClause}`;
+      const query = `
+          SELECT * FROM ${tableName}
+          ${whereClause}
+          ORDER BY ${sortField} ${sortOrder}
+          LIMIT $${limitParam} OFFSET $${offsetParam}
+      `;
+      
+      const countResult = await pool.query(countQuery, queryParams.slice(0, -2));
+      const result = await pool.query(query, queryParams);
+      
+      res.json({
+          movies: result.rows,
+          currentPage: page,
+          maxPage: Math.ceil(parseInt(countResult.rows[0].total) / limit)
+      });
+  } catch (err) {
+      console.error("Error:", err);
+      res.status(500).json({ error: "Database query error", details: err.message });
+  }
 });
-
 
 // For a single movie
 app.get("/api/movie", async (req, res) => {
@@ -540,7 +513,7 @@ app.post("/api/add-show", async (req, res) => {
     }
     
     // Possibly refresh other views as needed
-    if (releaseYear >= new Date().getFullYear() - 2) {
+    if (releaseYear >= new Date().getFullYear() - 4) {
       await pool.query('REFRESH MATERIALIZED VIEW new_releases');
     }
     if (releaseYear < 2000) {
@@ -557,9 +530,11 @@ app.post("/api/add-show", async (req, res) => {
     res.status(500).json({ error: "Database error while adding new show" });
   }
 });
+
 app.get("/recently-added", ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "recently-added.html"));
 });
+
 app.get("/api/recently-added", async (req, res) => {
   try {
     const result = await pool.query(`
