@@ -8,6 +8,8 @@ csv_file_path = 'netflix_titles.csv'
 data = pd.read_csv(csv_file_path, quotechar='"')
 data.drop('show_id', axis=1, inplace=True)
 user_data = pd.read_csv("users.csv")
+ratings = pd.read_csv("ratings.csv")
+watch_list = pd.read_csv("watch_list.csv")
 
 # TODO: Make these a secret
 postgres_password = "" # set to whatever your password is, default postgres is empty
@@ -26,6 +28,8 @@ print("Loading data into tables...")
 # Load into Postgresql
 data.to_sql("netflix_titles", engine, if_exists="append", index=False)
 user_data.to_sql("users", engine, if_exists="append", index=False)
+ratings.to_sql("ratings", engine, if_exists="append", index=False)
+watch_list.to_sql("watch_list", engine, if_exists="append", index=False)
 
 print("Creating materialized views...")
 # Create materialized views
