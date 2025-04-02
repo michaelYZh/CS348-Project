@@ -18,3 +18,13 @@
 (1 row)
 
 INSERT 0 1
+       title       | release_year | show_type | duration |                                                                  description                                                                   |                                                                      show_cast                                                                      |  country  | rating |                       listed_in                       
+-------------------+--------------+-----------+----------+------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------+-----------+--------+-------------------------------------------------------
+ The Beast Stalker |         2008 | Movie     | 110 min  | Feeling guilty after a high-speed chase leaves a girl dead, a determined sergeant pursues the crime boss who triggered the fatal car accident. | Nicholas Tse, Nick Cheung, Zhang Jing-chu, Miao Pu, Liu Kai-chi, Philip Keung, Kwok Jing-hung, Sherman Chung, Zhang He, Wong Suet-yin, Wong Sum-yin | Hong Kong | TV-14  | Action & Adventure, Cult Movies, International Movies
+(1 row)
+
+    username     | score |      review      
+-----------------+-------+------------------
+ admin@gmail.com |     9 | Extremely funny!
+(1 row)
+

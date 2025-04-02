@@ -39,17 +39,6 @@ CREATE TABLE ratings (
     FOREIGN KEY (uid) REFERENCES Users(uid)
 );
 
-CREATE TABLE show_tiers (
-    show_id INTEGER NOT NULL,
-    uid INTEGER NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    tier VARCHAR(1) NOT NULL,
-    PRIMARY KEY (show_id, uid),
-    FOREIGN KEY (show_id) REFERENCES netflix_titles(show_id),
-    FOREIGN KEY (uid) REFERENCES Users(uid),
-    CHECK (LOWER(tier) IN ('s', 'a', 'b', 'c', 'd'))
-);
-
 CREATE TABLE watch_list (
     show_id INTEGER NOT NULL,
     uid INTEGER NOT NULL,
