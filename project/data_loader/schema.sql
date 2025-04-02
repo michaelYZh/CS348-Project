@@ -62,10 +62,12 @@ CREATE TABLE audit_log (
     id SERIAL PRIMARY KEY,
     operation VARCHAR(10) NOT NULL,
     table_name VARCHAR(50) NOT NULL,
-    show_id VARCHAR(10),
+    show_id INTEGER,
     uid INTEGER,
     change_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    details TEXT
+    details TEXT,
+    FOREIGN KEY (show_id) REFERENCES netflix_titles(show_id),
+    FOREIGN KEY (uid) REFERENCES users(uid)
 );
 
 CREATE OR REPLACE FUNCTION log_new_rating() RETURNS TRIGGER AS $$
@@ -94,7 +96,7 @@ BEGIN
     VALUES (
         'UPDATE',
         'ratings',
-        NEW.show_id::varchar,
+        NEW.show_id,
         NEW.uid,
         'Old Score: ' || OLD.score || ', New Score: ' || NEW.score ||
         ', Old Review: ' || COALESCE(OLD.review, 'N/A') ||
