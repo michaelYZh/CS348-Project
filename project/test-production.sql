@@ -18,6 +18,20 @@ HAVING username='admin@gmail.com';
 
 -- Insert a new movie
 INSERT INTO netflix_titles (
-    show_id, show_type, title, director, show_cast, country, date_added, 
+    show_type, title, director, show_cast, country, date_added, 
     release_year, rating, duration, listed_IN, description
-) VALUES ('s99999', 'movie', 'tester', 'ee', 'one two three', 'ee', '1999-03-31', 1999, 'PG13', '90 mins', 'cc', 'cc');
+) VALUES ('movie', 'tester', 'ee', 'one two three', 'ee', '1999-03-31', 1999, 'PG13', '90 mins', 'cc', 'cc');
+
+
+-- Select a single movie's metadata
+SELECT title, release_year, show_type, duration, description, show_cast, country, rating, listed_in
+FROM netflix_titles
+WHERE LOWER(title) = LOWER('The Beast Stalker')
+LIMIT 1;
+
+-- Get reviews for a single movie
+SELECT u.username, r.score, r.review
+FROM ratings r
+JOIN users u ON r.uid = u.uid
+WHERE r.show_id = 3653
+ORDER BY r.score DESC;

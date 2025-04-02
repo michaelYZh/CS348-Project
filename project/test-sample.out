@@ -14,18 +14,27 @@
  Synchronic       |         2020 | Movie     | Thrillers
 (5 rows)
 
- show_id | show_type |             title             |          director           |                                                       show_cast                                                       |   country   |    date_added     | release_year | rating | duration |                   listed_in                    |                                                                       description                                                                        
----------+-----------+-------------------------------+-----------------------------+-----------------------------------------------------------------------------------------------------------------------+-------------+-------------------+--------------+--------+----------+------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------
- s2037   | Movie     | #Alive                        | Cho Il                      | Yoo Ah-in, Park Shin-hye                                                                                              | South Korea | September 8, 2020 |         2020 | TV-MA  | 99 min   | Horror Movies, International Movies, Thrillers | As a grisly virus rampages a city, a lone man stays locked inside his apartment, digitally cut off from seeking help and desperate to find a way out.
- s2305   | Movie     | #AnneFrank - Parallel Stories | Sabina Fedeli, Anna Migotto | Helen Mirren, Gengher Gatti                                                                                           | Italy       | July 1, 2020      |         2019 | TV-14  | 95 min   | Documentaries, International Movies            | Through her diary, Anne Frank's story is retold alongside those of five Holocaust survivors in this poignant documentary from Oscar winner Helen Mirren.
- s2482   | Movie     | #FriendButMarried             | Rako Prijanto               | Adipati Dolken, Vanesha Prescilla, Rendi Jhon, Beby Tsabina, Denira Wiraguna, Refal Hady, Diandra Agatha, Sari Nila   | Indonesia   | May 21, 2020      |         2018 | TV-G   | 102 min  | Dramas, International Movies, Romantic Movies  | Pining for his high school crush for years, a young man puts up his best efforts to move out of the friend zone until she reveals she's getting married.
- s2325   | Movie     | #FriendButMarried 2           | Rako Prijanto               | Adipati Dolken, Mawar de Jongh, Sari Nila, Vonny Cornellya, Clay Gribble, Ivan Leonardy, Sarah Sechan, Jourdy Pranata | Indonesia   | June 28, 2020     |         2020 | TV-G   | 104 min  | Dramas, International Movies, Romantic Movies  | As Ayu and Ditto finally transition from best friends to newlyweds, a quick pregnancy creates uncertainty for the future of their young marriage.
- s5974   | Movie     | #Roxy                         | Michael Kennedy             | Jake Short, Sarah Fisher, Booboo Stewart, Danny Trejo, Pippa Mackie, Jake Smith, Patricia Zentilli, Carter Thicke     | Canada      | April 10, 2019    |         2018 | TV-14  | 105 min  | Comedies, Romantic Movies                      | A teenage hacker with a huge nose helps a cool kid woo a girl that he’s secretly in love with.
+ show_id | show_type |             title             |          director           |                                                                      show_cast                                                                      |   country   | date_added | release_year | rating | duration |                   listed_in                    |                                                                       description                                                                        
+---------+-----------+-------------------------------+-----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------+-------------+------------+--------------+--------+----------+------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------
+    3653 | Movie     | ¡Ay, mi madre!                | Frank Ariza                 | Estefanía de los Santos, Secun de la Rosa, Terele Pávez, María Alfonsa Rosso, Mariola Fuentes, Alfonso Sánchez, Paz Vega, Marta Torné, Concha Galán | Spain       | 2019-07-19 |         2019 | TV-MA  | 81 min   | Comedies, International Movies                 | When her estranged mother suddenly dies, a woman must follow the quirky instructions laid out in the will in order to collect an important inheritance.
+    2037 | Movie     | #Alive                        | Cho Il                      | Yoo Ah-in, Park Shin-hye                                                                                                                            | South Korea | 2020-09-08 |         2020 | TV-MA  | 99 min   | Horror Movies, International Movies, Thrillers | As a grisly virus rampages a city, a lone man stays locked inside his apartment, digitally cut off from seeking help and desperate to find a way out.
+    2305 | Movie     | #AnneFrank - Parallel Stories | Sabina Fedeli, Anna Migotto | Helen Mirren, Gengher Gatti                                                                                                                         | Italy       | 2020-07-01 |         2019 | TV-14  | 95 min   | Documentaries, International Movies            | Through her diary, Anne Frank's story is retold alongside those of five Holocaust survivors in this poignant documentary from Oscar winner Helen Mirren.
+    2482 | Movie     | #FriendButMarried             | Rako Prijanto               | Adipati Dolken, Vanesha Prescilla, Rendi Jhon, Beby Tsabina, Denira Wiraguna, Refal Hady, Diandra Agatha, Sari Nila                                 | Indonesia   | 2020-05-21 |         2018 | TV-G   | 102 min  | Dramas, International Movies, Romantic Movies  | Pining for his high school crush for years, a young man puts up his best efforts to move out of the friend zone until she reveals she's getting married.
+    2325 | Movie     | #FriendButMarried 2           | Rako Prijanto               | Adipati Dolken, Mawar de Jongh, Sari Nila, Vonny Cornellya, Clay Gribble, Ivan Leonardy, Sarah Sechan, Jourdy Pranata                               | Indonesia   | 2020-06-28 |         2020 | TV-G   | 104 min  | Dramas, International Movies, Romantic Movies  | As Ayu and Ditto finally transition from best friends to newlyweds, a quick pregnancy creates uncertainty for the future of their young marriage.
 (5 rows)
 
  count 
 -------
-     1
-(1 row)
+(0 rows)
 
 INSERT 0 1
+       title       | release_year |                       listed_in                       
+-------------------+--------------+-------------------------------------------------------
+ The Beast Stalker |         2008 | Action & Adventure, Cult Movies, International Movies
+(1 row)
+
+    username     | score |      review      
+-----------------+-------+------------------
+ admin@gmail.com |     9 | Extremely funny!
+(1 row)
+

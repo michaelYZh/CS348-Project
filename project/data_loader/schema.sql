@@ -5,6 +5,8 @@ DROP TABLE IF EXISTS Users CASCADE;
 DROP TABLE IF EXISTS netflix_titles CASCADE;
 DROP TABLE IF EXISTS show_tiers CASCADE;
 
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE TABLE netflix_titles (
     show_id SERIAL PRIMARY KEY,
     show_type VARCHAR(20) NOT NULL,
@@ -37,17 +39,6 @@ CREATE TABLE ratings (
     FOREIGN KEY (uid) REFERENCES Users(uid)
 );
 
-CREATE TABLE show_tiers (
-    show_id INTEGER NOT NULL,
-    uid INTEGER NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    tier VARCHAR(1) NOT NULL,
-    PRIMARY KEY (show_id, uid),
-    FOREIGN KEY (show_id) REFERENCES netflix_titles(show_id),
-    FOREIGN KEY (uid) REFERENCES Users(uid),
-    CHECK (LOWER(tier) IN ('s', 'a', 'b', 'c', 'd'))
-);
-
 CREATE TABLE watch_list (
     show_id INTEGER NOT NULL,
     uid INTEGER NOT NULL,
@@ -62,6 +53,8 @@ CREATE TABLE watch_list (
 );
 
 CREATE INDEX lowercase_title ON netflix_titles (LOWER(title));
+
+CREATE INDEX title_trgm_idx ON netflix_titles USING gist (title gist_trgm_ops);
 
 -- audit table --
 DROP TABLE IF EXISTS audit_log CASCADE;
