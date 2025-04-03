@@ -558,9 +558,12 @@ app.get("/recently-added", ensureAuthenticated, (req, res) => {
 app.get("/api/recently-added", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT show_id, title, release_year, show_type, duration, description
-      FROM netflix_titles
-      ORDER BY show_id DESC
+      SELECT shows.show_id as show_id, title, release_year, show_type, duration, description, count(review) as num_reviews
+      FROM netflix_titles shows 
+      LEFT JOIN ratings 
+      ON shows.show_id = ratings.show_id 
+      GROUP BY shows.show_id 
+      ORDER BY shows.show_id DESC 
       LIMIT 50`);
     res.send(result.rows)
   }
